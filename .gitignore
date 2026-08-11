@@ -1,0 +1,25 @@
+# Dependencies and build output
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+
+# Prisma generated client (created by `prisma generate`)
+generated/prisma/
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Local tooling
+.vercel/
+.snowflake/
+.v0-trash/
+__v0_runtime_loader.js
+__v0_devtools.tsx
+__v0_jsx-dev-runtime.ts
+
+# OS
+.DS_Store
+Thumbs.db
