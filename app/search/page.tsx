@@ -14,22 +14,16 @@ export default async function SearchPage({
 }) {
   const params = await searchParams
   return (
-    <>
+    <div className="user-app-page search-app-page">
       <SiteHeader />
-      <main className="search-main">
-        <div className="shell search-heading">
-          <p className="eyebrow">Pencarian bengkel</p>
-          <h1>Temukan bengkel yang paling masuk akal untuk didatangi.</h1>
-        </div>
-        <div className="shell">
-          <SearchExperience
-            initialQuery={params.q || ""}
-            initialLocation={params.location || ""}
-            initialLatitude={numberParam(params.lat)}
-            initialLongitude={numberParam(params.lng)}
-          />
-        </div>
+      <main className="user-search-main">
+        <SearchExperience
+          initialQuery={params.q || ""}
+          initialLocation={params.location || ""}
+          initialLatitude={numberParam(params.lat)}
+          initialLongitude={numberParam(params.lng)}
+        />
       </main>
-    </>
+    </div>
   )
 }

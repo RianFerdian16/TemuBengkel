@@ -22,7 +22,7 @@ export default async function WorkshopPage({ params }: { params: Promise<{ id: s
   }
 
   const googleMaps = mapsUrl(workshop)
-  const wa = whatsappUrl(workshop.whatsapp)
+  const wa = whatsappUrl(workshop.whatsapp || workshop.phone)
   const phone = telUrl(workshop.phone)
   const photos = workshop.photos?.slice(0, 3) || []
 
@@ -65,10 +65,25 @@ export default async function WorkshopPage({ params }: { params: Promise<{ id: s
                 </div>
               </div>
 
-              <div className="action-row">
-                {googleMaps && <a className="primary-btn action-btn" href={googleMaps} target="_blank" rel="noreferrer"><Navigation size={17} />Buka di Google Maps</a>}
-                {wa && <a className="secondary-btn action-btn" href={wa} target="_blank" rel="noreferrer"><MessageCircle size={17} />WhatsApp</a>}
-                {phone && <a className="secondary-btn action-btn" href={phone}><Phone size={17} />Telepon</a>}
+              <div className="action-row detail-contact-actions" aria-label="Hubungi bengkel">
+                {wa && (
+                  <a className="primary-btn action-btn whatsapp-action" href={wa} target="_blank" rel="noreferrer">
+                    <MessageCircle size={17} />
+                    <span>WhatsApp</span>
+                  </a>
+                )}
+                {phone && (
+                  <a className="secondary-btn action-btn compact-contact-action" href={phone} aria-label="Telepon bengkel" title="Telepon">
+                    <Phone size={17} />
+                    <span className="compact-contact-label">Telepon</span>
+                  </a>
+                )}
+                {googleMaps && (
+                  <a className="secondary-btn action-btn compact-contact-action" href={googleMaps} target="_blank" rel="noreferrer" aria-label="Buka bengkel di Google Maps" title="Google Maps">
+                    <Navigation size={17} />
+                    <span className="compact-contact-label">Google Maps</span>
+                  </a>
+                )}
               </div>
 
               <section className="detail-section">
@@ -120,15 +135,22 @@ export default async function WorkshopPage({ params }: { params: Promise<{ id: s
             </section>
 
             <aside className="detail-aside surface">
-              <h2>Siap menuju bengkel?</h2>
-              <p>Pilih rute resmi Google Maps untuk melihat perjalanan dari lokasi Anda.</p>
-              {googleMaps && <a className="primary-btn action-btn full-btn" href={googleMaps} target="_blank" rel="noreferrer"><Navigation size={17} />Buka rute</a>}
-              {wa && <a className="secondary-btn action-btn full-btn" href={wa} target="_blank" rel="noreferrer"><MessageCircle size={17} />Hubungi via WhatsApp</a>}
+              <h2>Hubungi bengkel</h2>
+              <p>Chat lewat WhatsApp, telepon langsung, atau buka rute resmi di Google Maps.</p>
+              {wa && <a className="primary-btn action-btn full-btn whatsapp-action" href={wa} target="_blank" rel="noreferrer"><MessageCircle size={17} />WhatsApp</a>}
+              {phone && <a className="secondary-btn action-btn full-btn" href={phone}><Phone size={17} />Telepon</a>}
+              {googleMaps && <a className="secondary-btn action-btn full-btn" href={googleMaps} target="_blank" rel="noreferrer"><Navigation size={17} />Buka di Google Maps</a>}
             </aside>
           </div>
         </div>
       </main>
-      {googleMaps && <div className="mobile-sticky-cta"><a className="primary-btn action-btn" href={googleMaps} target="_blank" rel="noreferrer"><Navigation size={17} />Buka di Google Maps</a></div>}
+      {(wa || phone || googleMaps) && (
+        <div className="mobile-sticky-cta detail-mobile-contact-bar" aria-label="Aksi cepat bengkel">
+          {wa && <a className="primary-btn action-btn whatsapp-action" href={wa} target="_blank" rel="noreferrer"><MessageCircle size={17} /><span>WhatsApp</span></a>}
+          {phone && <a className="secondary-btn action-btn compact-contact-action" href={phone} aria-label="Telepon bengkel" title="Telepon"><Phone size={18} /></a>}
+          {googleMaps && <a className="secondary-btn action-btn compact-contact-action" href={googleMaps} target="_blank" rel="noreferrer" aria-label="Buka bengkel di Google Maps" title="Google Maps"><Navigation size={18} /></a>}
+        </div>
+      )}
     </>
   )
 }
