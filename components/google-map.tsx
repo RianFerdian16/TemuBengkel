@@ -39,12 +39,14 @@ export function loadGoogleMaps() {
 export function GoogleMap({
   workshops,
   userLocation,
+  fitUserLocation = true,
   selectedId,
   onSelect,
   className = "map-canvas",
 }: {
   workshops: Workshop[]
   userLocation?: { latitude: number; longitude: number }
+  fitUserLocation?: boolean
   selectedId?: string
   onSelect?: (id: string) => void
   className?: string
@@ -107,13 +109,12 @@ export function GoogleMap({
       if (userLocation) {
         const content = document.createElement("div")
         content.className = "tb-user-location-marker"
-        content.setAttribute("aria-hidden", "true")
+        content.setAttribute("aria-label", "Posisi Anda sekarang")
         content.innerHTML = `
-          <span class="tb-user-location-halo"></span>
-          <span class="tb-user-location-arrow">
-            <svg viewBox="0 0 32 32" focusable="false" aria-hidden="true">
-              <path d="M16 2.7 29 28l-13-6.4L3 28 16 2.7Z" fill="currentColor"/>
-              <path d="M16 8.5v10.2" stroke="white" stroke-width="2.4" stroke-linecap="round" opacity=".96"/>
+          <span class="tb-user-location-pin">
+            <svg viewBox="0 0 40 48" focusable="false" aria-hidden="true">
+              <path d="M20 46C17.7 42.9 6 29.2 6 19.2C6 11.4 12.3 5 20 5s14 6.4 14 14.2C34 29.2 22.3 42.9 20 46Z" fill="currentColor" stroke="white" stroke-width="3" stroke-linejoin="round"/>
+              <circle cx="20" cy="19" r="5.5" fill="white"/>
             </svg>
           </span>
         `
@@ -126,7 +127,9 @@ export function GoogleMap({
           zIndex: 1000,
         })
         markersRef.current.push(marker)
-        bounds.extend({ lat: userLocation.latitude, lng: userLocation.longitude })
+        if (fitUserLocation) {
+          bounds.extend({ lat: userLocation.latitude, lng: userLocation.longitude })
+        }
       }
 
       workshops.forEach((workshop) => {
@@ -166,7 +169,7 @@ export function GoogleMap({
       cancelled = true
       window.clearInterval(timer)
     }
-  }, [workshops, userLocation?.latitude, userLocation?.longitude, selectedId, onSelect])
+  }, [workshops, userLocation?.latitude, userLocation?.longitude, fitUserLocation, selectedId, onSelect])
 
   if (error) {
     return (

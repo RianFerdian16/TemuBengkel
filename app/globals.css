@@ -2221,53 +2221,32 @@ img { display: block; max-width: 100%; }
 }
 
 /* ========================================================================== */
-/* TEMUBENGKEL V22 — distinct current-user marker                            */
+/* TEMUBENGKEL V23 — persistent current-user location pin                     */
 /* ========================================================================== */
 .tb-user-location-marker {
   position: relative;
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 46px;
   pointer-events: none;
-  transform: translateY(2px);
+  transform: translateY(-1px);
 }
-.tb-user-location-halo {
-  position: absolute;
-  inset: 2px;
-  border: 1px solid rgb(37 99 235 / 24%);
-  border-radius: 999px;
-  background: rgb(59 130 246 / 12%);
-  box-shadow: 0 0 0 8px rgb(59 130 246 / 5%);
-}
-.tb-user-location-arrow {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  display: grid;
-  width: 30px;
-  height: 30px;
-  place-items: center;
-  color: #2563eb;
-  transform: translate(-50%, -50%) rotate(8deg);
-  filter: drop-shadow(0 2px 3px rgb(15 23 42 / 24%));
-}
-.tb-user-location-arrow::before {
-  content: "";
-  position: absolute;
-  inset: 2px;
-  z-index: -1;
-  border: 2px solid white;
-  border-radius: 10px;
-  background: white;
-  clip-path: polygon(50% 0, 100% 100%, 50% 76%, 0 100%);
-}
-.tb-user-location-arrow svg {
+.tb-user-location-pin {
   display: block;
-  width: 30px;
-  height: 30px;
+  width: 38px;
+  height: 46px;
+  color: #2563eb;
+  filter: drop-shadow(0 3px 4px rgb(15 23 42 / 28%));
+}
+.tb-user-location-pin svg {
+  display: block;
+  width: 100%;
+  height: 100%;
   overflow: visible;
 }
 @media (max-width: 720px) {
-  .tb-user-location-marker { width: 40px; height: 40px; }
-  .tb-user-location-arrow,
-  .tb-user-location-arrow svg { width: 28px; height: 28px; }
+  .tb-user-location-marker,
+  .tb-user-location-pin {
+    width: 34px;
+    height: 42px;
+  }
 }

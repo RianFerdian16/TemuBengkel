@@ -238,7 +238,8 @@ export function SearchExperience({ initialQuery = "", initialLocation = "", init
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
-    if (locationText.trim()) setUserLocation(undefined)
+    // Keep the device location even when the user searches another area.
+    // It remains available as a persistent "Posisi Anda" marker on the map.
     void runSearch({ location: locationText.trim() ? undefined : userLocation, forceText: Boolean(locationText.trim()) })
   }
 
@@ -499,7 +500,14 @@ export function SearchExperience({ initialQuery = "", initialLocation = "", init
       </aside>
 
       <section className="mobile-map-stage" aria-label="Hasil pencarian dalam peta">
-        <GoogleMap workshops={visible} userLocation={userLocation} selectedId={selected?.id} onSelect={setSelectedId} className="mobile-search-map" />
+        <GoogleMap
+          workshops={visible}
+          userLocation={userLocation}
+          fitUserLocation={!locationText.trim()}
+          selectedId={selected?.id}
+          onSelect={setSelectedId}
+          className="mobile-search-map"
+        />
 
         {!hasSearched && !loading && (
           <div className="map-idle-overlay">
