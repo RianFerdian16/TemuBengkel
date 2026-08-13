@@ -61,7 +61,7 @@ export function OwnerDashboard() {
         <div><p className="eyebrow">Dashboard pemilik</p><h1>Kelola bengkel Anda.</h1></div>
         <div className="owner-dashboard-actions"><Link className="primary-btn inline-btn" href="/owner/workshops/new"><Plus size={17} />Tambah bengkel</Link><button className="secondary-btn" type="button" onClick={logout}>Keluar</button></div>
       </div>
-      <p className="hero-copy owner-dashboard-copy">Data yang Anda ubah masuk status <strong>pending</strong> sebelum ditampilkan publik. Data Google Maps tetap berasal dari Google; di sini Anda mengelola data tambahan TEMUBENGKEL.</p>
+      <p className="hero-copy owner-dashboard-copy">Data yang Anda ubah masuk status <strong>pending</strong> sebelum ditampilkan publik. Kelola alamat, kontak, jam operasional, layanan, dan informasi bengkel dari satu tempat.</p>
 
       <div className="owner-stats" aria-label="Ringkasan listing">
         <article className="owner-stat"><span><Building2 size={18} /> Total listing</span><strong>{loading ? "—" : stats.total}</strong></article>
@@ -72,7 +72,7 @@ export function OwnerDashboard() {
 
       {error && <div className="inline-alert">{error}<button type="button" onClick={() => void load()}>Coba lagi</button></div>}
       {loading ? <div className="workshop-card skeleton-card" /> : items.length === 0 ? (
-        <div className="surface empty-state compact-empty"><div><Building2 className="empty-icon" size={30} /><h3>Belum ada bengkel</h3><p>Tambahkan bengkel pertama Anda. Anda dapat menghubungkannya ke Google Place ID atau memasukkan data lokasi sendiri.</p><Link className="primary-btn inline-btn" href="/owner/workshops/new"><Plus size={17} />Tambah bengkel</Link></div></div>
+        <div className="surface empty-state compact-empty"><div><Building2 className="empty-icon" size={30} /><h3>Belum ada bengkel</h3><p>Tambahkan bengkel pertama Anda. Cukup isi alamat; titik peta akan dibuat otomatis saat data disimpan.</p><Link className="primary-btn inline-btn" href="/owner/workshops/new"><Plus size={17} />Tambah bengkel</Link></div></div>
       ) : (
         <div className="owner-list">
           <div className="owner-list-heading"><span>LISTING ANDA</span><span>{items.length} TOTAL</span></div>

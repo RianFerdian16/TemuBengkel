@@ -5,7 +5,9 @@ export async function GET(request: NextRequest) {
   const name = request.nextUrl.searchParams.get("name")
   const width = Number(request.nextUrl.searchParams.get("w") || 1200)
 
-  if (!name || !/^places\/.+\/photos\/.+/.test(name)) {
+  const validNew = Boolean(name && /^places\/.+\/photos\/.+/.test(name))
+  const validLegacy = Boolean(name && /^legacy:.+/.test(name))
+  if (!name || (!validNew && !validLegacy)) {
     return NextResponse.json({ error: "Photo reference tidak valid" }, { status: 400 })
   }
 
@@ -19,7 +21,13 @@ export async function GET(request: NextRequest) {
         "Cache-Control": "no-store",
       },
     })
-  } catch {
-    return NextResponse.json({ error: "Foto tidak tersedia" }, { status: 404 })
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: "Foto tidak tersedia",
+        detail: error instanceof Error ? error.message : String(error),
+      },
+      { status: 404 },
+    )
   }
 }

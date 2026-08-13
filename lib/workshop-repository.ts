@@ -1,5 +1,5 @@
 import { getPrisma } from "@/lib/db"
-import type { Workshop, WorkshopStatus } from "@/lib/workshops"
+import { isWorkshopOpenNow, type Workshop, type WorkshopStatus } from "@/lib/workshops"
 
 export type WorkshopWriteInput = {
   googlePlaceId: string | null
@@ -10,6 +10,7 @@ export type WorkshopWriteInput = {
   latitude: number | null
   longitude: number | null
   services: string[]
+  openingHours: string[]
   description: string | null
   mechanicCallAvailable: boolean
 }
@@ -33,6 +34,8 @@ function mapPublicWorkshop(row: any): Workshop {
     latitude: typeof row.latitude === "number" ? row.latitude : undefined,
     longitude: typeof row.longitude === "number" ? row.longitude : undefined,
     services: Array.isArray(row.services) ? row.services : [],
+    openingHours: Array.isArray(row.openingHours) ? row.openingHours : [],
+    isOpenNow: isWorkshopOpenNow(Array.isArray(row.openingHours) ? row.openingHours : []),
     description: row.description || undefined,
     mechanicCallAvailable: Boolean(row.mechanicCallAvailable),
     status: statusToApi(row.status),
@@ -52,6 +55,7 @@ export function mapOwnerWorkshopForApi(row: any) {
     latitude: row.latitude,
     longitude: row.longitude,
     services: Array.isArray(row.services) ? row.services : [],
+    opening_hours: Array.isArray(row.openingHours) ? row.openingHours : [],
     description: row.description,
     mechanic_call_available: Boolean(row.mechanicCallAvailable),
     status: statusToApi(row.status),
@@ -70,6 +74,7 @@ function toPrismaData(data: WorkshopWriteInput) {
     latitude: data.latitude,
     longitude: data.longitude,
     services: data.services,
+    openingHours: data.openingHours,
     description: data.description,
     mechanicCallAvailable: data.mechanicCallAvailable,
   }

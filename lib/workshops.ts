@@ -1,8 +1,16 @@
 export type WorkshopStatus = "pending" | "approved" | "rejected"
 
+export type PlaceAttribution = {
+  provider?: string
+  providerUri?: string
+}
+
 export type WorkshopPhoto = {
   name: string
   googleMapsUri?: string
+  flagContentUri?: string
+  widthPx?: number
+  heightPx?: number
   authorAttributions?: { displayName?: string; uri?: string; photoUri?: string }[]
 }
 
@@ -24,6 +32,7 @@ export type Workshop = {
   services?: string[]
   photoNames?: string[]
   photos?: WorkshopPhoto[]
+  attributions?: PlaceAttribution[]
   description?: string
   mechanicCallAvailable?: boolean
   status?: WorkshopStatus
@@ -36,15 +45,49 @@ export type Workshop = {
 export type GoogleReview = {
   rating?: number
   text?: string
+  originalText?: string
+  textLanguageCode?: string
+  originalTextLanguageCode?: string
   relativePublishTimeDescription?: string
+  publishTime?: string
   authorName?: string
   authorUri?: string
   authorPhotoUri?: string
   googleMapsUri?: string
+  flagContentUri?: string
 }
 
 export type WorkshopDetail = Workshop & {
   reviews?: GoogleReview[]
+}
+
+export function isWorkshopOpenNow(openingHours?: string[]) {
+  if (!Array.isArray(openingHours) || openingHours.length === 0) return undefined
+
+  const parts = new Intl.DateTimeFormat("id-ID", {
+    timeZone: "Asia/Jakarta",
+    weekday: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date())
+
+  const weekday = parts.find((part) => part.type === "weekday")?.value.toLocaleLowerCase("id-ID")
+  const hour = Number(parts.find((part) => part.type === "hour")?.value)
+  const minute = Number(parts.find((part) => part.type === "minute")?.value)
+  if (!weekday || !Number.isFinite(hour) || !Number.isFinite(minute)) return undefined
+
+  const line = openingHours.find((item) => item.split(":", 1)[0]?.trim().toLocaleLowerCase("id-ID") === weekday)
+  if (!line) return undefined
+  if (/:\s*Tutup$/i.test(line)) return false
+
+  const match = line.match(/:\s*(\d{2}):(\d{2})\s*[–-]\s*(\d{2}):(\d{2})$/)
+  if (!match) return undefined
+  const now = hour * 60 + minute
+  const opens = Number(match[1]) * 60 + Number(match[2])
+  const closes = Number(match[3]) * 60 + Number(match[4])
+  if (closes > opens) return now >= opens && now < closes
+  return now >= opens || now < closes
 }
 
 export function mapsUrl(workshop: Workshop) {
@@ -107,6 +150,8 @@ export function mergeWorkshops(primary: Workshop[], ownerListings: Workshop[]) {
       ownerListingId: owner.id,
       whatsapp: owner.whatsapp || item.whatsapp,
       services: owner.services?.length ? owner.services : item.services,
+      openingHours: owner.openingHours?.length ? owner.openingHours : item.openingHours,
+      isOpenNow: owner.openingHours?.length ? isWorkshopOpenNow(owner.openingHours) : item.isOpenNow,
       description: owner.description || item.description,
       mechanicCallAvailable: owner.mechanicCallAvailable,
     }

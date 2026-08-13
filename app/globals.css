@@ -889,7 +889,10 @@ img { display: block; max-width: 100%; }
   .mobile-filter-screen { max-width: 620px; }
 }
 
-/* ==========================================================================\n   TEMUBENGKEL V4 — landing-first home + dedicated search workspace\n   Editorial/Swiss + refined industrial utility.\n   ========================================================================== */
+/* ==========================================================================
+   TEMUBENGKEL V4 — landing-first home + dedicated search workspace
+   Editorial/Swiss + refined industrial utility.
+   ========================================================================== */
 
 .landing-shell { width: min(calc(100% - 48px), 1220px); margin-inline: auto; }
 .home-app-page { background: var(--background); }
@@ -1318,3 +1321,901 @@ img { display: block; max-width: 100%; }
    Clean location-pin silhouette; no decorative polygon container.
    ========================================================================== */
 .landing-pin-visual { align-self: center; justify-self: center; }
+
+/* ==============================================================
+   TEMUBENGKEL V8 — workshop detail CTA cleanup
+   Keep exactly one contact action row under workshop information.
+   ============================================================= */
+.detail-grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.detail-content {
+  width: 100%;
+}
+
+.detail-aside,
+.mobile-sticky-cta,
+.detail-mobile-contact-bar {
+  display: none !important;
+}
+
+.detail-contact-actions {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 18px 0 30px;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.detail-contact-actions .action-btn {
+  min-height: 46px;
+  margin: 0;
+}
+
+.detail-contact-actions .whatsapp-action {
+  min-width: 164px;
+}
+
+.detail-contact-actions .compact-contact-action {
+  min-width: 132px;
+}
+
+.detail-contact-actions .compact-contact-label {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  clip-path: none;
+  white-space: nowrap;
+}
+
+@media (max-width: 680px) {
+  .detail-main {
+    padding-bottom: 88px;
+  }
+
+  .detail-contact-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1.12fr) minmax(0, .92fr) minmax(0, 1.15fr);
+    gap: 7px;
+    padding: 16px 0 24px;
+  }
+
+  .detail-contact-actions .action-btn,
+  .detail-contact-actions .whatsapp-action,
+  .detail-contact-actions .compact-contact-action {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 8px;
+    gap: 6px;
+    font-size: 11px;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .detail-contact-actions .action-btn svg {
+    width: 15px;
+    height: 15px;
+    flex: 0 0 auto;
+  }
+
+  .detail-contact-actions .compact-contact-label {
+    display: inline;
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+    clip-path: none;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 370px) {
+  .detail-contact-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .detail-contact-actions .whatsapp-action {
+    grid-column: 1 / -1;
+  }
+}
+
+/* V9 — live Google Maps photos + reviews */
+.google-photo-fallback {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  padding: 10px;
+  background: linear-gradient(145deg, #e7e5df, #f5f3ed);
+  color: #6d7279;
+  font-size: 9px;
+  font-weight: 750;
+  text-align: center;
+}
+.gallery-photo > .google-photo-fallback {
+  position: absolute;
+  inset: 0;
+}
+.gallery-placeholder {
+  padding: 24px;
+  text-align: center;
+}
+.source-kicker {
+  display: inline-block;
+  margin-bottom: 7px;
+  color: #5e5e5e;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+.review-heading .header-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.google-rating-summary {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin: 18px 0 5px;
+  padding: 16px 0;
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--border);
+}
+.google-rating-summary > strong {
+  font-size: 42px;
+  line-height: .9;
+  letter-spacing: -.055em;
+}
+.google-rating-stars {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #b77400;
+}
+.google-rating-stars span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.review-top > div {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.review-google-label {
+  color: #5e5e5e;
+  font-size: 9px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.review-translation-note {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+.review-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 9px;
+}
+.review-links .review-source { margin-top: 0; }
+.review-report {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+.review-empty-state {
+  display: grid;
+  gap: 5px;
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  background: #fffefb;
+}
+.review-empty-state strong { font-size: 13px; }
+.review-empty-state span { color: var(--muted); font-size: 11px; line-height: 1.55; }
+.review-empty-state a { width: fit-content; margin-top: 5px; color: var(--primary); font-size: 11px; font-weight: 800; }
+.places-attribution-block {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 10px;
+  margin: 10px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  color: #5e5e5e;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.places-attribution-block a { text-decoration: underline; text-underline-offset: 2px; }
+.mobile-result-summary b[translate="no"] { color: #5e5e5e; font-weight: 600; }
+.map-card-photo-strip > .google-photo-fallback { height: 100%; min-height: 72px; }
+.mobile-list-workshop > .google-photo-fallback { width: 86px; min-height: 92px; border-right: 1px solid var(--border); }
+.search-app-page .mobile-list-workshop > .google-photo-fallback { width: 92px; min-height: 96px; }
+
+@media (max-width: 720px) {
+  .google-rating-summary > strong { font-size: 36px; }
+  .review-heading { gap: 12px; }
+  .review-heading .header-link { font-size: 10px; }
+  .places-attribution-block { margin-bottom: 12px; }
+  .mobile-list-workshop > .google-photo-fallback { width: 72px; min-height: 78px; }
+  .search-app-page .mobile-list-workshop > .google-photo-fallback { width: 88px; min-height: 94px; }
+}
+
+/* V10 — browser Places fallback for detail media */
+.gallery-placeholder small {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+/* ========================================================================== */
+/* TEMUBENGKEL V15 — detail page without photo/review content                 */
+/* Keep the useful Google rating count + map, remove empty media/review noise. */
+/* ========================================================================== */
+.detail-main-v15 { padding: 24px 0 92px; }
+.detail-main-v15 .detail-back-link { margin-bottom: 18px; }
+
+.detail-overview-v15 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  grid-template-areas:
+    "copy rating"
+    "actions actions";
+  gap: 28px 34px;
+  padding: 34px;
+  border-color: var(--ink);
+  border-radius: 8px;
+  box-shadow: 6px 6px 0 rgb(18 23 34 / 9%);
+}
+.detail-overview-copy-v15 { grid-area: copy; min-width: 0; }
+.detail-overview-copy-v15 .detail-status-row { margin-bottom: 20px; }
+.detail-kicker-v15 {
+  margin: 0 0 9px;
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+}
+.detail-overview-copy-v15 h1 {
+  max-width: 860px;
+  margin: 0;
+  font-size: clamp(42px, 6vw, 72px);
+  line-height: .94;
+  letter-spacing: -.065em;
+}
+.detail-address-v15 {
+  display: flex;
+  max-width: 780px;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 20px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+.detail-address-v15 svg { flex: 0 0 auto; margin-top: 2px; color: var(--primary); }
+
+.detail-rating-card-v15 {
+  grid-area: rating;
+  align-self: start;
+  min-height: 170px;
+  padding: 20px;
+  border: 1px solid var(--ink);
+  border-radius: 6px;
+  background: var(--surface-blue);
+}
+.detail-rating-label-v15 {
+  display: block;
+  color: #596474;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+.detail-rating-number-v15 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 20px;
+  color: #b77400;
+}
+.detail-rating-number-v15 strong {
+  color: var(--foreground);
+  font-size: 46px;
+  line-height: .9;
+  letter-spacing: -.065em;
+}
+.detail-review-count-v15 {
+  display: block;
+  margin-top: 12px;
+  color: #4d5867;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.detail-contact-actions-v15 {
+  grid-area: actions;
+  margin: 0;
+  padding: 22px 0 0;
+  border-top: 1px solid var(--border-strong);
+  border-bottom: 0;
+}
+
+.detail-map-section-v15 { margin-top: 44px; }
+.detail-section-heading-v15 {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 15px;
+}
+.detail-section-kicker-v15 {
+  margin: 0 0 5px;
+  color: var(--primary);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+}
+.detail-section-heading-v15 h2 {
+  margin: 0;
+  font-size: clamp(26px, 3.5vw, 38px);
+  line-height: 1;
+  letter-spacing: -.045em;
+}
+.detail-map-note-v15 {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.detail-map-wrap-v15 {
+  position: relative;
+  overflow: hidden;
+  border-color: var(--ink);
+  border-radius: 8px;
+  box-shadow: 6px 6px 0 rgb(18 23 34 / 8%);
+}
+.detail-map-v15 { height: 430px; filter: saturate(.9) contrast(.98); }
+
+.detail-info-grid-v15 {
+  display: grid;
+  gap: 18px;
+  margin-top: 44px;
+}
+.detail-info-grid-v15.two { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); }
+.detail-info-grid-v15.one { grid-template-columns: minmax(0, 1fr); }
+.detail-info-card-v15 {
+  padding: 24px;
+  border-color: var(--border-strong);
+  border-radius: 8px;
+}
+.detail-info-card-title-v15 {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.detail-info-card-title-v15 > svg { color: var(--primary); }
+.detail-info-card-title-v15 span {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+.detail-info-card-title-v15 h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.05;
+  letter-spacing: -.035em;
+}
+.detail-hours-list-v15 { border-top-color: var(--border-strong); border-bottom-color: var(--border-strong); }
+.detail-hours-list-v15 div { padding: 11px 0; }
+.detail-body-copy-v15 { font-size: 13px; }
+.detail-service-list-v15 { margin-top: 18px; }
+.detail-source-v15 { margin-top: 34px; padding-top: 16px; border-top: 1px solid var(--border); }
+
+@media (max-width: 860px) {
+  .detail-overview-v15 {
+    grid-template-columns: minmax(0, 1fr) 190px;
+    padding: 28px;
+  }
+  .detail-rating-card-v15 { min-height: 150px; padding: 17px; }
+  .detail-rating-number-v15 strong { font-size: 40px; }
+  .detail-info-grid-v15.two { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 680px) {
+  .detail-main-v15 { padding-top: 15px; padding-bottom: 92px; }
+  .detail-main-v15 .detail-back-link { margin-bottom: 13px; font-size: 11px; }
+  .detail-overview-v15 {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "copy"
+      "rating"
+      "actions";
+    gap: 18px;
+    padding: 18px;
+    border-radius: 6px;
+    box-shadow: 3px 3px 0 rgb(18 23 34 / 8%);
+  }
+  .detail-overview-copy-v15 .detail-status-row { margin-bottom: 15px; }
+  .detail-overview-copy-v15 h1 { font-size: clamp(36px, 11vw, 48px); line-height: .96; }
+  .detail-address-v15 { margin-top: 15px; font-size: 12px; }
+  .detail-rating-card-v15 {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "label label"
+      "number count";
+    min-height: 0;
+    align-items: end;
+    gap: 9px 14px;
+    padding: 15px;
+  }
+  .detail-rating-label-v15 { grid-area: label; }
+  .detail-rating-number-v15 { grid-area: number; margin: 0; }
+  .detail-rating-number-v15 strong { font-size: 36px; }
+  .detail-rating-number-v15 svg { width: 18px; height: 18px; }
+  .detail-review-count-v15 { grid-area: count; margin: 0 0 3px; font-size: 11px; }
+  .detail-contact-actions-v15 {
+    margin-top: 0;
+    padding-top: 18px;
+  }
+  .detail-map-section-v15 { margin-top: 32px; }
+  .detail-section-heading-v15 { align-items: flex-start; margin-bottom: 12px; }
+  .detail-section-heading-v15 h2 { font-size: 27px; }
+  .detail-map-note-v15 { display: none; }
+  .detail-map-wrap-v15 { border-radius: 6px; box-shadow: 3px 3px 0 rgb(18 23 34 / 8%); }
+  .detail-map-v15 { height: min(52vh, 360px); min-height: 300px; }
+  .detail-info-grid-v15 { margin-top: 32px; gap: 12px; }
+  .detail-info-card-v15 { padding: 18px; border-radius: 6px; }
+  .detail-info-card-title-v15 { margin-bottom: 15px; }
+  .detail-source-v15 { margin-top: 25px; }
+}
+
+
+/* =========================================================
+   TEMUBENGKEL V16 — image-free search results
+   Result cards intentionally use information hierarchy only.
+   ========================================================= */
+.search-app-page .mobile-list-workshop {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+  overflow: visible;
+  border-left: 3px solid transparent;
+}
+.search-app-page .mobile-list-workshop:hover {
+  border-left-color: var(--primary);
+}
+.search-app-page .mobile-list-workshop > img,
+.search-app-page .mobile-list-placeholder {
+  display: none !important;
+}
+.search-app-page .mobile-list-copy {
+  min-width: 0;
+  padding: 13px 34px 12px 13px;
+}
+.search-app-page .mobile-list-title {
+  align-items: center;
+}
+.search-app-page .mobile-list-title strong {
+  font-size: 12px;
+  line-height: 1.28;
+}
+.search-app-page .mobile-list-copy > small {
+  max-width: 95%;
+  margin-top: 6px;
+  font-size: 9px;
+  line-height: 1.45;
+}
+.search-app-page .mobile-list-meta {
+  align-items: center;
+  margin-top: 9px;
+}
+.search-app-page .mobile-list-meta b {
+  font-size: 9px;
+}
+.search-app-page .mobile-list-arrow {
+  right: 12px;
+  bottom: 12px;
+}
+.search-app-page .map-workshop-card {
+  overflow: hidden;
+  border-top: 3px solid var(--primary);
+}
+.search-app-page .map-card-photo-strip {
+  display: none !important;
+}
+.search-app-page .map-card-content {
+  padding: 15px 15px 14px;
+}
+.search-app-page .map-card-title-row {
+  gap: 16px;
+}
+.search-app-page .map-card-title-row strong {
+  font-size: 13px;
+  line-height: 1.25;
+}
+.search-app-page .map-card-title-row span,
+.search-app-page .map-card-title-row b {
+  font-size: 9px;
+}
+.search-app-page .map-card-meta {
+  margin-top: 9px;
+}
+.search-app-page .map-card-actions {
+  margin-top: 11px;
+}
+
+@media (max-width: 680px) {
+  .search-app-page .mobile-list-workshop {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 74px;
+  }
+  .search-app-page .mobile-list-copy {
+    padding: 10px 30px 9px 10px;
+  }
+  .search-app-page .mobile-list-title strong { font-size: 9px; }
+  .search-app-page .mobile-list-copy > small { font-size: 7px; }
+  .search-app-page .mobile-list-meta { margin-top: 6px; }
+  .search-app-page .mobile-list-meta b { font-size: 7px; }
+  .search-app-page .map-workshop-card {
+    left: 8px;
+    right: 8px;
+    bottom: 61px;
+    width: auto;
+  }
+  .search-app-page .map-card-content { padding: 10px 10px 9px; }
+  .search-app-page .map-card-title-row strong { font-size: 10px; }
+  .search-app-page .map-card-title-row span,
+  .search-app-page .map-card-title-row b { font-size: 7px; }
+  .search-app-page .map-card-meta { margin-top: 6px; }
+  .search-app-page .map-card-actions { margin-top: 7px; }
+}
+
+/* TEMUBENGKEL V18 — owner-friendly workshop form */
+.owner-workshop-form { padding: 0; overflow: hidden; }
+.owner-form-section { padding: 24px; }
+.owner-form-section + .owner-form-section { border-top: 1px solid var(--border-strong); }
+.owner-form-section-heading { display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: start; gap: 12px; margin-bottom: 18px; }
+.owner-form-section-heading > span { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid var(--ink); border-radius: 50%; color: var(--primary); font: 850 10px/1 ui-monospace, monospace; }
+.owner-form-section-heading strong { display: block; font-size: 14px; letter-spacing: -.01em; }
+.owner-form-section-heading p { margin: 4px 0 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
+.owner-workshop-form .form-grid.two-col { margin-top: 0; }
+.owner-contact-grid { margin-top: 0 !important; }
+.auto-location-note { display: flex; align-items: flex-start; gap: 11px; margin-top: 14px; padding: 13px 14px; border: 1px solid #9db6e8; border-radius: var(--radius-sm); background: var(--surface-blue); }
+.auto-location-note > svg { flex: 0 0 auto; margin-top: 1px; color: var(--primary); }
+.auto-location-note strong { display: block; font-size: 12px; }
+.auto-location-note p { margin: 3px 0 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
+.schedule-heading { grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; }
+.schedule-copy-btn { display: inline-flex; min-height: 34px; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 0 10px; background: #fffefb; color: var(--foreground); font-size: 10px; font-weight: 850; cursor: pointer; }
+.schedule-copy-btn:hover { border-color: var(--ink); transform: translateY(-1px); }
+.schedule-list { display: grid; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); overflow: hidden; }
+.schedule-row { display: grid; grid-template-columns: 150px minmax(0, 1fr); min-height: 60px; align-items: center; gap: 16px; padding: 9px 12px; background: #fffefb; }
+.schedule-row + .schedule-row { border-top: 1px solid var(--border); }
+.schedule-row.is-closed { background: #f4f2ed; }
+.owner-workshop-form .schedule-day-toggle { display: flex; align-items: center; gap: 9px; margin: 0 !important; cursor: pointer; }
+.schedule-day-toggle input { width: 17px; height: 17px; min-height: 0; margin: 0; accent-color: var(--primary); }
+.schedule-day-toggle span { color: var(--foreground); font-size: 12px; font-weight: 850; letter-spacing: 0; text-transform: none; }
+.schedule-times { display: grid; grid-template-columns: minmax(110px, 1fr) auto minmax(110px, 1fr); align-items: end; gap: 9px; }
+.owner-workshop-form .schedule-times label { display: grid; gap: 5px; margin: 0 !important; }
+.schedule-times label > span { color: var(--muted); font-size: 8px; font-weight: 850; letter-spacing: .11em; text-transform: uppercase; }
+.owner-workshop-form .schedule-times input { width: 100%; min-height: 38px; padding: 0 10px; background: white; }
+.schedule-times i { padding-bottom: 11px; color: var(--muted); font-style: normal; }
+.schedule-closed-label { color: var(--muted); font-size: 11px; font-weight: 800; }
+.schedule-note { display: flex; align-items: center; gap: 7px; margin-top: 10px; }
+.schedule-note svg { flex: 0 0 auto; color: var(--primary); }
+.owner-save-error { margin: 16px 24px 0; }
+.owner-workshop-form > .owner-form-actions { margin: 0; padding: 20px 24px 24px; border-top: 1px solid var(--ink); }
+
+@media (max-width: 640px) {
+  .owner-form-section { padding: 18px 16px; }
+  .owner-form-section-heading { grid-template-columns: 30px minmax(0, 1fr); gap: 10px; }
+  .owner-form-section-heading > span { width: 30px; height: 30px; }
+  .schedule-heading { grid-template-columns: 30px minmax(0, 1fr); }
+  .schedule-copy-btn { grid-column: 1 / -1; width: 100%; margin-top: 2px; }
+  .schedule-row { grid-template-columns: 1fr; gap: 8px; padding: 12px; }
+  .schedule-times { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+  .owner-save-error { margin: 14px 16px 0; }
+  .owner-workshop-form > .owner-form-actions { padding: 16px; }
+}
+.auto-location-note a { color: var(--primary); font-weight: 800; text-underline-offset: 2px; }
+
+/* =========================================================
+   TEMUBENGKEL V19 — owner precise location picker
+   Address finds the area; owner positions the exact map point.
+   ========================================================= */
+.owner-address-field textarea { margin-bottom: 0; }
+.owner-address-actions { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; margin-top: 10px; }
+.owner-workshop-form .owner-find-address-btn { display: inline-flex; min-height: 42px; align-items: center; justify-content: center; gap: 7px; margin-top: 0; padding: 0 16px; white-space: nowrap; }
+.owner-address-actions > p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.owner-location-inline-error { margin: 9px 0 0; color: #a92c22; font-size: 10px; font-weight: 750; line-height: 1.5; }
+.owner-location-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; margin: 21px 0 10px; padding-top: 18px; border-top: 1px solid var(--border); }
+.owner-location-heading > div { display: flex; align-items: center; gap: 8px; }
+.owner-location-heading svg { color: var(--primary); }
+.owner-location-heading strong { font-size: 12px; }
+.owner-location-heading > span { color: var(--muted); font-size: 9px; font-weight: 700; }
+.owner-location-empty { display: flex; min-height: 132px; align-items: center; justify-content: center; gap: 12px; border: 1px dashed #aaa59a; border-radius: var(--radius-sm); padding: 20px; background: #f5f3ed; text-align: left; }
+.owner-location-empty > svg { flex: 0 0 auto; color: var(--primary); }
+.owner-location-empty strong { display: block; font-size: 12px; }
+.owner-location-empty p { max-width: 520px; margin: 4px 0 0; color: var(--muted); font-size: 10px; line-height: 1.55; }
+.owner-location-map-shell { position: relative; height: 340px; overflow: hidden; border: 1px solid var(--ink); border-radius: var(--radius-sm); background: #e9edf0; box-shadow: 3px 3px 0 rgb(23 28 37 / 8%); }
+.owner-location-map { width: 100%; height: 100%; }
+.owner-location-center-pin { position: absolute; z-index: 500; left: 50%; top: 50%; display: grid; width: 44px; height: 54px; place-items: start center; pointer-events: none; transform: translate(-50%, -100%); filter: drop-shadow(0 3px 2px rgb(23 28 37 / 25%)); }
+.owner-location-center-pin > span { display: grid; width: 42px; height: 42px; place-items: center; border: 3px solid white; border-radius: 50% 50% 50% 8px; background: var(--primary); color: white; transform: rotate(-45deg); box-shadow: 0 0 0 1px rgb(23 28 37 / 20%); }
+.owner-location-center-pin svg { transform: rotate(45deg); }
+.owner-location-crosshair { position: absolute; z-index: 499; left: 50%; top: 50%; width: 8px; height: 8px; pointer-events: none; border: 2px solid white; border-radius: 50%; background: var(--ink); transform: translate(-50%, -50%); box-shadow: 0 0 0 1px rgb(23 28 37 / 25%); }
+.owner-location-status { display: flex; align-items: flex-start; gap: 9px; margin-top: 10px; padding: 11px 12px; border: 1px solid #9bcab5; border-radius: var(--radius-sm); background: #f0faf5; }
+.owner-location-status > svg { flex: 0 0 auto; margin-top: 1px; color: #08794e; }
+.owner-location-status strong { display: block; color: #075b3d; font-size: 10px; }
+.owner-location-status span { display: block; margin-top: 2px; color: var(--muted); font-size: 9px; line-height: 1.45; }
+.owner-location-error { margin: 9px 0 0; padding: 10px 12px; border: 1px solid #e3aaa4; border-radius: var(--radius-sm); background: #fff2f0; color: #a92c22; font-size: 10px; font-weight: 750; }
+.owner-location-map .leaflet-control-attribution { font-size: 9px; }
+.owner-location-map .leaflet-control-zoom a { color: var(--foreground); }
+
+@media (max-width: 720px) {
+  .owner-address-actions { grid-template-columns: 1fr; gap: 7px; }
+  .owner-workshop-form .owner-find-address-btn { width: 100%; }
+  .owner-location-heading { display: grid; align-items: start; gap: 5px; }
+  .owner-location-map-shell { height: 300px; }
+  .owner-location-empty { min-height: 116px; justify-content: flex-start; padding: 16px; }
+}
+
+/* ========================================================================== */
+/* TEMUBENGKEL V20 — easier owner location search + always-on map picker      */
+/* ========================================================================== */
+.owner-address-actions-v20 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.owner-find-current-btn {
+  min-height: 42px;
+}
+.owner-address-helper {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.55;
+}
+.owner-location-inline-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 10px 0 0;
+  color: #225f9a;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+.owner-location-inline-hint svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+.owner-location-inline-soft-error {
+  border-left: 3px solid #d68127;
+  padding-left: 8px;
+  color: #9a4819;
+}
+.owner-location-map-shell {
+  min-height: 340px;
+  background: linear-gradient(180deg, #e8edf2 0%, #dfe5eb 100%);
+}
+.owner-location-center-pin {
+  width: 40px;
+  height: 58px;
+  filter: drop-shadow(0 5px 6px rgb(23 28 37 / 24%));
+}
+.owner-location-center-pin > span {
+  position: relative;
+  display: block;
+  width: 40px;
+  height: 54px;
+  background: transparent;
+  border: 0;
+  transform: none;
+  box-shadow: none;
+}
+.owner-location-center-pin > span::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgb(23 28 37 / 20%);
+  transform: translateX(-50%);
+  filter: blur(1px);
+}
+.owner-location-center-pin-outer {
+  position: absolute;
+  inset: 0 auto auto 0;
+  display: block;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px 999px 999px 6px;
+  background: var(--primary);
+  transform: rotate(-45deg);
+  box-shadow: 0 0 0 3px #fff, 0 0 0 4px rgb(23 28 37 / 14%);
+}
+.owner-location-center-pin-inner {
+  position: absolute;
+  left: 50%;
+  top: 10px;
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: #fff;
+  transform: translateX(-50%);
+  box-shadow: inset 0 0 0 4px #6fa2ff;
+}
+.owner-location-crosshair {
+  width: 10px;
+  height: 10px;
+  border: 2px solid white;
+  background: #122032;
+  box-shadow: 0 0 0 2px rgb(23 28 37 / 10%);
+}
+.owner-location-status-neutral {
+  border-color: #cbd8e7;
+  background: #f5f8fc;
+}
+.owner-location-status-neutral > svg {
+  color: #1d5fa4;
+}
+.owner-location-status-neutral strong {
+  color: #184872;
+}
+@media (max-width: 720px) {
+  .owner-address-actions-v20 {
+    align-items: stretch;
+  }
+  .owner-address-actions-v20 > button {
+    width: 100%;
+    justify-content: center;
+  }
+  .owner-location-map-shell {
+    min-height: 300px;
+  }
+}
+
+/* ========================================================================== */
+/* TEMUBENGKEL V21 — owner map uses same Google Maps engine as Search         */
+/* ========================================================================== */
+.owner-location-map-shell-google {
+  height: 380px;
+  min-height: 380px;
+  overflow: hidden;
+  border: 1px solid var(--ink);
+  border-radius: 10px;
+  background: #eef3f7;
+  box-shadow: 4px 4px 0 rgb(18 23 34 / 8%);
+}
+.owner-location-map-google {
+  width: 100%;
+  height: 100%;
+  min-height: 380px;
+}
+.owner-location-center-pin-v21 {
+  position: absolute;
+  z-index: 10;
+  left: 50%;
+  top: 50%;
+  width: 42px;
+  height: 56px;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+  filter: drop-shadow(0 5px 5px rgb(15 30 55 / 24%));
+}
+.owner-location-center-pin-v21 > span {
+  position: relative;
+  display: block;
+  width: 42px;
+  height: 56px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+.owner-pin-v21::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 3px;
+  width: 38px;
+  height: 38px;
+  border: 3px solid #fff;
+  border-radius: 50% 50% 50% 7px;
+  background: #2d73e8;
+  transform: translateX(-50%) rotate(-45deg);
+  box-shadow: 0 0 0 1px rgb(20 38 68 / 20%);
+}
+.owner-pin-v21-ring {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 13px;
+  width: 16px;
+  height: 16px;
+  border: 3px solid #fff;
+  border-radius: 999px;
+  transform: translateX(-50%);
+}
+.owner-pin-v21-dot {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 19px;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: #fff;
+  transform: translateX(-50%);
+}
+.owner-location-center-pin-v21::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 12px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgb(18 23 34 / 20%);
+  transform: translateX(-50%);
+  filter: blur(1px);
+}
+.owner-location-picker-google .owner-location-crosshair,
+.owner-location-picker-google .owner-location-center-pin-outer,
+.owner-location-picker-google .owner-location-center-pin-inner {
+  display: none !important;
+}
+.owner-location-picker-google .owner-location-status {
+  margin-top: 12px;
+}
+.owner-address-actions-v20 .primary-btn,
+.owner-address-actions-v20 .secondary-btn {
+  min-height: 44px;
+  border-radius: 7px;
+}
+@media (max-width: 720px) {
+  .owner-location-map-shell-google,
+  .owner-location-map-google {
+    height: 330px;
+    min-height: 330px;
+  }
+  .owner-location-center-pin-v21 {
+    transform: translate(-50%, -100%) scale(.92);
+    transform-origin: bottom center;
+  }
+}

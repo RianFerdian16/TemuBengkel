@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getAuthSession } from "@/lib/auth"
 import { isPrismaUniqueConstraintError } from "@/lib/db"
 import { parseWorkshopInput } from "@/lib/workshop-input"
+import { ensureWorkshopCoordinates } from "@/lib/geocode"
 import { createOwnerWorkshop, getOwnerWorkshops } from "@/lib/workshop-repository"
 
 export async function GET() {
@@ -28,7 +29,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Silakan masuk terlebih dahulu." }, { status: 401 })
     }
 
-    const data = parseWorkshopInput(await request.json())
+    const parsed = parseWorkshopInput(await request.json())
+    const data = await ensureWorkshopCoordinates(parsed)
     const workshop = await createOwnerWorkshop(session.user.id, data)
     return NextResponse.json({ workshop }, { status: 201 })
   } catch (error) {

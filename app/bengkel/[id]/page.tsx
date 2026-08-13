@@ -13,10 +13,18 @@ export default async function WorkshopPage({ params }: { params: Promise<{ id: s
     return (
       <>
         <SiteHeader />
-        <main className="page-main"><div className="shell narrow-shell">
-          <Link className="back-link" href="/search">← Kembali ke pencarian</Link>
-          <div className="surface empty-state detail-empty"><div><h1>Bengkel tidak dapat dimuat</h1><p>Data Google Maps tidak tersedia, listing belum disetujui, atau integrasi belum dikonfigurasi.</p><Link className="primary-btn inline-btn" href="/search">Cari bengkel lain</Link></div></div>
-        </div></main>
+        <main className="page-main">
+          <div className="shell narrow-shell">
+            <Link className="back-link" href="/search">← Kembali ke pencarian</Link>
+            <div className="surface empty-state detail-empty">
+              <div>
+                <h1>Bengkel tidak dapat dimuat</h1>
+                <p>Data bengkel tidak tersedia, listing belum disetujui, atau integrasi belum dikonfigurasi.</p>
+                <Link className="primary-btn inline-btn" href="/search">Cari bengkel lain</Link>
+              </div>
+            </div>
+          </div>
+        </main>
       </>
     )
   }
@@ -24,133 +32,136 @@ export default async function WorkshopPage({ params }: { params: Promise<{ id: s
   const googleMaps = mapsUrl(workshop)
   const wa = whatsappUrl(workshop.whatsapp || workshop.phone)
   const phone = telUrl(workshop.phone)
-  const photos = workshop.photos?.slice(0, 3) || []
+  const hasRating = typeof workshop.rating === "number"
+  const hasInfo = Boolean(workshop.description || workshop.services?.length)
+  const hasHours = Boolean(workshop.openingHours?.length)
 
   return (
     <>
       <SiteHeader />
-      <main className="detail-main">
+      <main className="detail-main detail-main-v15">
         <div className="shell">
-          <Link className="back-link" href="/search">← Kembali ke pencarian</Link>
+          <Link className="back-link detail-back-link" href="/search">← Kembali ke pencarian</Link>
 
-          <div className={`detail-gallery ${photos.length <= 1 ? "single" : ""}`}>
-            {photos.length > 0 ? photos.map((photo, index) => (
-              <div className="gallery-photo" key={photo.name}>
-                <img src={`/api/places/photo?name=${encodeURIComponent(photo.name)}&w=${index === 0 ? 1200 : 720}`} alt={`Foto ${workshop.name} ${index + 1}`} />
-                {(photo.authorAttributions?.length || photo.googleMapsUri) ? (
-                  <div className="photo-attribution">
-                    {photo.authorAttributions?.map((author, authorIndex) => (
-                      author.uri ? <a key={`${author.displayName || "author"}-${authorIndex}`} href={author.uri} target="_blank" rel="noreferrer">Foto: {author.displayName || "Kontributor Google"}</a> : <span key={authorIndex}>Foto: {author.displayName || "Kontributor Google"}</span>
-                    ))}
-                    {photo.googleMapsUri && <a href={photo.googleMapsUri} target="_blank" rel="noreferrer">Lihat sumber</a>}
-                  </div>
-                ) : null}
+          <section className="surface detail-overview-v15">
+            <div className="detail-overview-copy-v15">
+              <div className="detail-status-row">
+                {workshop.isOpenNow !== undefined && (
+                  <span className={`status-pill ${workshop.isOpenNow ? "open" : "closed"}`}>
+                    {workshop.isOpenNow ? "Buka sekarang" : "Tutup"}
+                  </span>
+                )}
+                {workshop.mechanicCallAvailable && (
+                  <span className="service-badge"><Wrench size={14} />Montir panggilan tersedia</span>
+                )}
               </div>
-            )) : <div className="gallery-placeholder">Foto belum tersedia</div>}
-          </div>
 
-          <div className="detail-grid">
-            <section className="detail-content">
-              <div className="detail-title-row">
-                <div>
-                  <div className="detail-status-row">
-                    {workshop.isOpenNow !== undefined && <span className={`status-pill ${workshop.isOpenNow ? "open" : "closed"}`}>{workshop.isOpenNow ? "Buka sekarang" : "Tutup"}</span>}
-                    {workshop.mechanicCallAvailable && <span className="service-badge"><Wrench size={14} />Montir panggilan tersedia</span>}
-                  </div>
-                  <h1>{workshop.name}</h1>
-                  <div className="detail-rating">
-                    {typeof workshop.rating === "number" && <span><Star size={17} fill="currentColor" />{workshop.rating.toFixed(1)} {workshop.reviewCount ? `(${workshop.reviewCount.toLocaleString("id-ID")} ulasan)` : ""}</span>}
-                    {workshop.address && <span><MapPin size={17} />{workshop.address}</span>}
-                  </div>
+              <p className="detail-kicker-v15">Bengkel motor</p>
+              <h1>{workshop.name}</h1>
+
+              {workshop.address && (
+                <div className="detail-address-v15">
+                  <MapPin size={18} />
+                  <span>{workshop.address}</span>
                 </div>
+              )}
+            </div>
+
+            <div className="detail-rating-card-v15" aria-label="Rating Google Maps">
+              <span className="detail-rating-label-v15">Rating Google Maps</span>
+              <div className="detail-rating-number-v15">
+                <Star size={22} fill="currentColor" />
+                <strong>{hasRating ? workshop.rating!.toFixed(1) : "—"}</strong>
               </div>
+              <span className="detail-review-count-v15">
+                {workshop.reviewCount
+                  ? `${workshop.reviewCount.toLocaleString("id-ID")} ulasan`
+                  : "Belum ada jumlah ulasan"}
+              </span>
+            </div>
 
-              <div className="action-row detail-contact-actions" aria-label="Hubungi bengkel">
-                {wa && (
-                  <a className="primary-btn action-btn whatsapp-action" href={wa} target="_blank" rel="noreferrer">
-                    <MessageCircle size={17} />
-                    <span>WhatsApp</span>
-                  </a>
-                )}
-                {phone && (
-                  <a className="secondary-btn action-btn compact-contact-action" href={phone} aria-label="Telepon bengkel" title="Telepon">
-                    <Phone size={17} />
-                    <span className="compact-contact-label">Telepon</span>
-                  </a>
-                )}
-                {googleMaps && (
-                  <a className="secondary-btn action-btn compact-contact-action" href={googleMaps} target="_blank" rel="noreferrer" aria-label="Buka bengkel di Google Maps" title="Google Maps">
-                    <Navigation size={17} />
-                    <span className="compact-contact-label">Google Maps</span>
-                  </a>
-                )}
+            <div className="action-row detail-contact-actions detail-contact-actions-v15" aria-label="Hubungi bengkel">
+              {wa && (
+                <a className="primary-btn action-btn whatsapp-action" href={wa} target="_blank" rel="noreferrer">
+                  <MessageCircle size={17} />
+                  <span>WhatsApp</span>
+                </a>
+              )}
+              {phone && (
+                <a className="secondary-btn action-btn compact-contact-action" href={phone} aria-label="Telepon bengkel" title="Telepon">
+                  <Phone size={17} />
+                  <span className="compact-contact-label">Telepon</span>
+                </a>
+              )}
+              {googleMaps && (
+                <a className="secondary-btn action-btn compact-contact-action" href={googleMaps} target="_blank" rel="noreferrer" aria-label="Buka bengkel di Google Maps" title="Google Maps">
+                  <Navigation size={17} />
+                  <span className="compact-contact-label">Google Maps</span>
+                </a>
+              )}
+            </div>
+          </section>
+
+          <section className="detail-map-section-v15">
+            <div className="detail-section-heading-v15">
+              <div>
+                <p className="detail-section-kicker-v15">Lokasi</p>
+                <h2>Temukan bengkel di peta</h2>
               </div>
+              <span className="detail-map-note-v15">Peta interaktif</span>
+            </div>
+            <div className="surface detail-map-wrap detail-map-wrap-v15">
+              <GoogleMap workshops={[workshop]} selectedId={workshop.id} className="detail-map detail-map-v15" />
+            </div>
+          </section>
 
-              <section className="detail-section">
-                <h2>Lokasi</h2>
-                <div className="surface detail-map-wrap">
-                  <GoogleMap workshops={[workshop]} selectedId={workshop.id} className="detail-map" />
-                </div>
-              </section>
-
-              {workshop.openingHours?.length ? (
-                <section className="detail-section">
-                  <h2><Clock3 size={19} />Jam operasional</h2>
-                  <div className="hours-list">{workshop.openingHours.map((line) => <div key={line}>{line}</div>)}</div>
-                </section>
-              ) : null}
-
-              {(workshop.description || workshop.services?.length) ? (
-                <section className="detail-section">
-                  <h2>Informasi bengkel</h2>
-                  {workshop.description && <p className="body-copy">{workshop.description}</p>}
-                  {workshop.services?.length ? <div className="service-list">{workshop.services.map((service) => <span key={service}>{service}</span>)}</div> : null}
-                </section>
-              ) : null}
-
-              {workshop.reviews?.length ? (
-                <section className="detail-section">
-                  <div className="section-heading review-heading"><div><h2>Ulasan Google</h2><p className="muted">Ulasan ditampilkan dari data Google Maps yang tersedia.</p></div>{googleMaps && <a className="header-link" href={googleMaps} target="_blank" rel="noreferrer">Lihat di Google Maps</a>}</div>
-                  <div className="review-list">
-                    {workshop.reviews.map((review, index) => (
-                      <article className="review-item" key={`${review.authorName || "review"}-${index}`}>
-                        <div className="review-author-row">
-                          {review.authorPhotoUri ? <img src={review.authorPhotoUri} alt="" className="review-avatar" /> : <div className="review-avatar review-avatar-fallback" aria-hidden="true">G</div>}
-                          <div className="review-author-copy">
-                            <div className="review-top">
-                              {review.authorUri ? <a href={review.authorUri} target="_blank" rel="noreferrer"><strong>{review.authorName || "Pengguna Google"}</strong></a> : <strong>{review.authorName || "Pengguna Google"}</strong>}
-                              <span>{review.rating ? `★ ${review.rating}` : ""}{review.relativePublishTimeDescription ? ` · ${review.relativePublishTimeDescription}` : ""}</span>
-                            </div>
-                            {review.text && <p>{review.text}</p>}
-                            {review.googleMapsUri && <a className="review-source" href={review.googleMapsUri} target="_blank" rel="noreferrer">Lihat ulasan sumber di Google Maps</a>}
-                          </div>
-                        </div>
-                      </article>
-                    ))}
+          {(hasHours || hasInfo) && (
+            <div className={`detail-info-grid-v15 ${hasHours && hasInfo ? "two" : "one"}`}>
+              {hasHours && (
+                <section className="surface detail-info-card-v15">
+                  <div className="detail-info-card-title-v15">
+                    <Clock3 size={19} />
+                    <div>
+                      <span>Operasional</span>
+                      <h2>Jam buka</h2>
+                    </div>
+                  </div>
+                  <div className="hours-list detail-hours-list-v15">
+                    {workshop.openingHours!.map((line) => <div key={line}>{line}</div>)}
                   </div>
                 </section>
-              ) : null}
+              )}
 
-              <p className="google-attribution">Informasi publik seperti rating, jam buka, foto, dan ulasan berasal dari Google Maps/Places bila tersedia. Data tambahan TEMUBENGKEL hanya ditampilkan jika telah disediakan pemilik dan disetujui.</p>
-            </section>
+              {hasInfo && (
+                <section className="surface detail-info-card-v15">
+                  <div className="detail-info-card-title-v15">
+                    <Wrench size={19} />
+                    <div>
+                      <span>Layanan</span>
+                      <h2>Informasi bengkel</h2>
+                    </div>
+                  </div>
+                  {workshop.description && <p className="body-copy detail-body-copy-v15">{workshop.description}</p>}
+                  {workshop.services?.length ? (
+                    <div className="service-list detail-service-list-v15">
+                      {workshop.services.map((service) => <span key={service}>{service}</span>)}
+                    </div>
+                  ) : null}
+                </section>
+              )}
+            </div>
+          )}
 
-            <aside className="detail-aside surface">
-              <h2>Hubungi bengkel</h2>
-              <p>Chat lewat WhatsApp, telepon langsung, atau buka rute resmi di Google Maps.</p>
-              {wa && <a className="primary-btn action-btn full-btn whatsapp-action" href={wa} target="_blank" rel="noreferrer"><MessageCircle size={17} />WhatsApp</a>}
-              {phone && <a className="secondary-btn action-btn full-btn" href={phone}><Phone size={17} />Telepon</a>}
-              {googleMaps && <a className="secondary-btn action-btn full-btn" href={googleMaps} target="_blank" rel="noreferrer"><Navigation size={17} />Buka di Google Maps</a>}
-            </aside>
+          <div className="places-attribution-block detail-source-v15">
+            <span>Sumber data publik: <strong translate="no">Google Maps</strong></span>
+            {workshop.attributions?.map((attribution, index) => (
+              attribution.providerUri
+                ? <a key={`${attribution.provider || "provider"}-${index}`} href={attribution.providerUri} target="_blank" rel="noreferrer">{attribution.provider || "Penyedia data"}</a>
+                : <span key={index}>{attribution.provider}</span>
+            ))}
           </div>
         </div>
       </main>
-      {(wa || phone || googleMaps) && (
-        <div className="mobile-sticky-cta detail-mobile-contact-bar" aria-label="Aksi cepat bengkel">
-          {wa && <a className="primary-btn action-btn whatsapp-action" href={wa} target="_blank" rel="noreferrer"><MessageCircle size={17} /><span>WhatsApp</span></a>}
-          {phone && <a className="secondary-btn action-btn compact-contact-action" href={phone} aria-label="Telepon bengkel" title="Telepon"><Phone size={18} /></a>}
-          {googleMaps && <a className="secondary-btn action-btn compact-contact-action" href={googleMaps} target="_blank" rel="noreferrer" aria-label="Buka bengkel di Google Maps" title="Google Maps"><Navigation size={18} /></a>}
-        </div>
-      )}
     </>
   )
 }

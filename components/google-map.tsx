@@ -8,7 +8,7 @@ type MapsWindow = Window & {
   __temubengkelMapsPromise?: Promise<any>
 }
 
-function loadGoogleMaps() {
+export function loadGoogleMaps() {
   const win = window as MapsWindow
   if (win.google?.maps) return Promise.resolve(win.google)
   if (win.__temubengkelMapsPromise) return win.__temubengkelMapsPromise
@@ -27,7 +27,7 @@ function loadGoogleMaps() {
     script.dataset.temubengkelGoogleMaps = "true"
     script.async = true
     script.defer = true
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&v=weekly&libraries=marker`
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&v=weekly&libraries=marker,places`
     script.onload = () => resolve((window as MapsWindow).google)
     script.onerror = () => reject(new Error("Google Maps gagal dimuat"))
     document.head.appendChild(script)

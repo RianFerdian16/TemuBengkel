@@ -14,6 +14,8 @@ function enrichWithOwner<T extends Workshop>(google: T, owner?: Workshop | null)
     ownerListingId: owner.id,
     whatsapp: owner.whatsapp || google.whatsapp,
     services: owner.services?.length ? owner.services : google.services,
+    openingHours: owner.openingHours?.length ? owner.openingHours : google.openingHours,
+    isOpenNow: owner.openingHours?.length ? owner.isOpenNow : google.isOpenNow,
     description: owner.description || google.description,
     mechanicCallAvailable: owner.mechanicCallAvailable,
   }

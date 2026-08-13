@@ -35,6 +35,59 @@ type SearchErrorKind = "location" | "system" | null
 
 const serviceOptions = ["Servis Ringan", "Ganti Oli", "Body Repair & Cat"]
 
+const SEARCH_SESSION_KEY = "temubengkel:search-session:v1"
+const SEARCH_SESSION_TTL_MS = 30 * 60 * 1000
+
+type SearchSession = {
+  version: 1
+  savedAt: number
+  locationText: string
+  userLocation?: { latitude: number; longitude: number }
+  workshops: Workshop[]
+  hasSearched: boolean
+  view: "list" | "map"
+  selectedId?: string
+  filters: {
+    openOnly: boolean
+    distanceKm: number
+    shopType: "all" | "official"
+    services: string[]
+    mechanicCallOnly: boolean
+  }
+}
+
+function readSearchSession(): SearchSession | null {
+  if (typeof window === "undefined") return null
+  try {
+    const raw = window.localStorage.getItem(SEARCH_SESSION_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Partial<SearchSession>
+    if (parsed.version !== 1 || typeof parsed.savedAt !== "number") return null
+    return {
+      version: 1,
+      savedAt: parsed.savedAt,
+      locationText: typeof parsed.locationText === "string" ? parsed.locationText : "",
+      userLocation:
+        typeof parsed.userLocation?.latitude === "number" && typeof parsed.userLocation?.longitude === "number"
+          ? { latitude: parsed.userLocation.latitude, longitude: parsed.userLocation.longitude }
+          : undefined,
+      workshops: Array.isArray(parsed.workshops) ? parsed.workshops : [],
+      hasSearched: Boolean(parsed.hasSearched),
+      view: parsed.view === "list" ? "list" : "map",
+      selectedId: typeof parsed.selectedId === "string" ? parsed.selectedId : undefined,
+      filters: {
+        openOnly: Boolean(parsed.filters?.openOnly),
+        distanceKm: typeof parsed.filters?.distanceKm === "number" ? parsed.filters.distanceKm : 15,
+        shopType: parsed.filters?.shopType === "official" ? "official" : "all",
+        services: Array.isArray(parsed.filters?.services) ? parsed.filters.services.filter((item): item is string => typeof item === "string") : [],
+        mechanicCallOnly: Boolean(parsed.filters?.mechanicCallOnly),
+      },
+    }
+  } catch {
+    return null
+  }
+}
+
 export function SearchExperience({ initialQuery = "", initialLocation = "", initialLatitude, initialLongitude }: Props) {
   const [query] = useState(initialQuery)
   const [locationText, setLocationText] = useState(initialLocation)
@@ -51,6 +104,7 @@ export function SearchExperience({ initialQuery = "", initialLocation = "", init
   const [view, setView] = useState<"list" | "map">("map")
   const [selectedId, setSelectedId] = useState<string | undefined>()
   const [filterOpen, setFilterOpen] = useState(false)
+  const [sessionHydrated, setSessionHydrated] = useState(false)
 
   const [openOnly, setOpenOnly] = useState(false)
   const [distanceKm, setDistanceKm] = useState(15)
@@ -58,9 +112,14 @@ export function SearchExperience({ initialQuery = "", initialLocation = "", init
   const [services, setServices] = useState<string[]>([])
   const [mechanicCallOnly, setMechanicCallOnly] = useState(false)
 
-  const runSearch = useCallback(async (override?: { location?: { latitude: number; longitude: number }; forceText?: boolean }) => {
+  const runSearch = useCallback(async (override?: {
+    location?: { latitude: number; longitude: number }
+    forceText?: boolean
+    locationText?: string
+  }) => {
     const activeLocation = override?.forceText ? undefined : (override?.location || userLocation)
-    if (!activeLocation && !locationText.trim() && !query.trim()) {
+    const activeLocationText = override?.locationText ?? locationText
+    if (!activeLocation && !activeLocationText.trim() && !query.trim()) {
       setError("Lokasi diperlukan untuk menemukan bengkel terdekat.")
       setErrorKind("location")
       return
@@ -71,8 +130,8 @@ export function SearchExperience({ initialQuery = "", initialLocation = "", init
     if (activeLocation) {
       params.set("lat", String(activeLocation.latitude))
       params.set("lng", String(activeLocation.longitude))
-    } else if (locationText.trim()) {
-      params.set("location", locationText.trim())
+    } else if (activeLocationText.trim()) {
+      params.set("location", activeLocationText.trim())
     }
 
     setLoading(true)
@@ -97,12 +156,85 @@ export function SearchExperience({ initialQuery = "", initialLocation = "", init
   }, [locationText, query, userLocation])
 
   useEffect(() => {
-    if (initialQuery || initialLocation || (typeof initialLatitude === "number" && typeof initialLongitude === "number")) {
+    const hasExplicitSearch = Boolean(
+      initialQuery || initialLocation || (typeof initialLatitude === "number" && typeof initialLongitude === "number"),
+    )
+
+    if (hasExplicitSearch) {
+      setSessionHydrated(true)
       void runSearch()
+      return
     }
-    // Initial query from URL only.
+
+    const cached = readSearchSession()
+    if (!cached) {
+      setSessionHydrated(true)
+      return
+    }
+
+    setLocationText(cached.locationText)
+    setUserLocation(cached.userLocation)
+    setWorkshops(cached.workshops)
+    setHasSearched(cached.hasSearched)
+    setView(cached.view)
+    setSelectedId(cached.selectedId || cached.workshops[0]?.id)
+    setOpenOnly(cached.filters.openOnly)
+    setDistanceKm(cached.filters.distanceKm)
+    setShopType(cached.filters.shopType)
+    setServices(cached.filters.services)
+    setMechanicCallOnly(cached.filters.mechanicCallOnly)
+    setSessionHydrated(true)
+
+    // Hasil yang masih fresh ditampilkan langsung tanpa request ulang.
+    // Setelah 30 menit, posisi terakhir tetap dipakai agar user tidak perlu
+    // menekan tombol lokasi lagi, tetapi daftar bengkel di-refresh.
+    if (Date.now() - cached.savedAt > SEARCH_SESSION_TTL_MS && cached.hasSearched) {
+      if (cached.userLocation) {
+        void runSearch({ location: cached.userLocation })
+      } else if (cached.locationText.trim()) {
+        void runSearch({ forceText: true, locationText: cached.locationText })
+      }
+    }
+    // Hydrate sekali saat halaman Cari pertama kali mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  useEffect(() => {
+    if (!sessionHydrated || typeof window === "undefined") return
+    const meaningfulSession = Boolean(hasSearched || userLocation || locationText.trim())
+    if (!meaningfulSession) return
+
+    const session: SearchSession = {
+      version: 1,
+      savedAt: Date.now(),
+      locationText,
+      userLocation,
+      workshops,
+      hasSearched,
+      view,
+      selectedId,
+      filters: { openOnly, distanceKm, shopType, services, mechanicCallOnly },
+    }
+
+    try {
+      window.localStorage.setItem(SEARCH_SESSION_KEY, JSON.stringify(session))
+    } catch {
+      // localStorage bisa unavailable pada private/locked-down browser.
+    }
+  }, [
+    sessionHydrated,
+    locationText,
+    userLocation,
+    workshops,
+    hasSearched,
+    view,
+    selectedId,
+    openOnly,
+    distanceKm,
+    shopType,
+    services,
+    mechanicCallOnly,
+  ])
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
@@ -355,7 +487,10 @@ export function SearchExperience({ initialQuery = "", initialLocation = "", init
         {hasSearched && visible.length > 0 && (
           <section className="mobile-result-list" aria-live="polite">
             <div className="mobile-result-summary">
-              <div><strong>{visible.length} bengkel ditemukan</strong><span>Diurutkan dari yang terdekat</span></div>
+              <div>
+                <strong>{visible.length} bengkel ditemukan</strong>
+                <span>Diurutkan dari yang terdekat · data publik dari <b translate="no">Google Maps</b></span>
+              </div>
               {hasActiveFilters && <button type="button" onClick={resetFilters}>Reset filter</button>}
             </div>
             {visible.map((workshop) => <ListWorkshopCard workshop={workshop} key={workshop.id} />)}
@@ -383,15 +518,9 @@ export function SearchExperience({ initialQuery = "", initialLocation = "", init
 
 function MapWorkshopCard({ workshop }: { workshop: Workshop }) {
   const directions = mapsUrl(workshop)
-  const photos = workshop.photoNames?.slice(0, 3) || []
 
   return (
     <div className="map-workshop-card">
-      <div className="map-card-photo-strip">
-        {photos.length ? photos.map((photo, index) => (
-          <img key={photo} src={`/api/places/photo?name=${encodeURIComponent(photo)}&w=420`} alt={index === 0 ? `Foto ${workshop.name}` : ""} />
-        )) : <div className="map-card-photo-placeholder"><Wrench size={22} /></div>}
-      </div>
       <div className="map-card-content">
         <div className="map-card-title-row">
           <div><strong>{workshop.name}</strong><span>{workshop.address || "Alamat tersedia di Google Maps"}</span></div>
@@ -414,9 +543,6 @@ function MapWorkshopCard({ workshop }: { workshop: Workshop }) {
 function ListWorkshopCard({ workshop }: { workshop: Workshop }) {
   return (
     <Link className="mobile-list-workshop" href={`/bengkel/${encodeURIComponent(workshop.id)}`}>
-      {workshop.photoNames?.[0]
-        ? <img src={`/api/places/photo?name=${encodeURIComponent(workshop.photoNames[0])}&w=320`} alt={`Foto ${workshop.name}`} />
-        : <span className="mobile-list-placeholder"><Wrench size={20} /></span>}
       <span className="mobile-list-copy">
         <span className="mobile-list-title"><strong>{workshop.name}</strong>{workshop.isOpenNow !== undefined && <i className={workshop.isOpenNow ? "open" : "closed"}>{workshop.isOpenNow ? "Buka" : "Tutup"}</i>}</span>
         <small>{workshop.address}</small>

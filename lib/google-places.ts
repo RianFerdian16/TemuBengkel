@@ -1,7 +1,17 @@
 import { getGoogleMapsServerKey } from "@/lib/config"
-import { type WorkshopDetail, type Workshop, type WorkshopPhoto, haversineDistanceMeters } from "@/lib/workshops"
+import {
+  type GoogleReview,
+  type PlaceAttribution,
+  type WorkshopDetail,
+  type Workshop,
+  type WorkshopPhoto,
+  haversineDistanceMeters,
+} from "@/lib/workshops"
 
 const PLACES_BASE = "https://places.googleapis.com/v1"
+const LEGACY_DETAILS_URL = "https://maps.googleapis.com/maps/api/place/details/json"
+const LEGACY_PHOTO_URL = "https://maps.googleapis.com/maps/api/place/photo"
+const LEGACY_PREFIX = "legacy:"
 
 function apiKey() {
   const key = getGoogleMapsServerKey()
@@ -15,6 +25,9 @@ function normalizePhotos(photos: unknown): WorkshopPhoto[] {
     .map((photo: any) => ({
       name: String(photo?.name || ""),
       googleMapsUri: photo?.googleMapsUri || undefined,
+      flagContentUri: photo?.flagContentUri || undefined,
+      widthPx: typeof photo?.widthPx === "number" ? photo.widthPx : undefined,
+      heightPx: typeof photo?.heightPx === "number" ? photo.heightPx : undefined,
       authorAttributions: Array.isArray(photo?.authorAttributions)
         ? photo.authorAttributions.map((author: any) => ({
             displayName: author?.displayName || undefined,
@@ -26,6 +39,125 @@ function normalizePhotos(photos: unknown): WorkshopPhoto[] {
     .filter((photo) => Boolean(photo.name))
 }
 
+function normalizeNewReviews(reviews: unknown): GoogleReview[] {
+  if (!Array.isArray(reviews)) return []
+  return reviews.slice(0, 5).map((review: any) => ({
+    rating: typeof review?.rating === "number" ? review.rating : undefined,
+    text: review?.text?.text,
+    originalText: review?.originalText?.text,
+    textLanguageCode: review?.text?.languageCode,
+    originalTextLanguageCode: review?.originalText?.languageCode,
+    relativePublishTimeDescription: review?.relativePublishTimeDescription,
+    publishTime: review?.publishTime,
+    authorName: review?.authorAttribution?.displayName,
+    authorUri: review?.authorAttribution?.uri,
+    authorPhotoUri: review?.authorAttribution?.photoUri,
+    googleMapsUri: review?.googleMapsUri,
+    flagContentUri: review?.flagContentUri,
+  }))
+}
+
+function normalizeAttributions(attributions: unknown): PlaceAttribution[] {
+  if (!Array.isArray(attributions)) return []
+  return attributions
+    .map((item: any) => ({
+      provider: item?.provider || undefined,
+      providerUri: item?.providerUri || undefined,
+    }))
+    .filter((item) => Boolean(item.provider || item.providerUri))
+}
+
+function stripHtml(value: string) {
+  return value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
+}
+
+type LegacyDetails = {
+  place_id?: string
+  name?: string
+  rating?: number
+  user_ratings_total?: number
+  url?: string
+  photos?: Array<{
+    photo_reference?: string
+    width?: number
+    height?: number
+    html_attributions?: string[]
+  }>
+  reviews?: Array<{
+    author_name?: string
+    author_url?: string
+    language?: string
+    profile_photo_url?: string
+    rating?: number
+    relative_time_description?: string
+    text?: string
+    time?: number
+  }>
+}
+
+async function fetchLegacyDetails(placeId: string): Promise<LegacyDetails | null> {
+  const params = new URLSearchParams({
+    place_id: placeId,
+    fields: "place_id,name,rating,user_ratings_total,url,photo,reviews",
+    language: "id",
+    reviews_sort: "most_relevant",
+    key: apiKey(),
+  })
+
+  const response = await fetch(`${LEGACY_DETAILS_URL}?${params.toString()}`, {
+    cache: "no-store",
+  })
+  if (!response.ok) return null
+
+  const payload = (await response.json()) as {
+    status?: string
+    error_message?: string
+    result?: LegacyDetails
+  }
+
+  if (payload.status !== "OK" || !payload.result) return null
+  if (payload.result.place_id && payload.result.place_id !== placeId) return null
+  return payload.result
+}
+
+function legacyPhotos(place: LegacyDetails | null): WorkshopPhoto[] {
+  if (!place || !Array.isArray(place.photos)) return []
+  return place.photos
+    .slice(0, 10)
+    .map((photo) => {
+      const ref = String(photo.photo_reference || "")
+      const labels = Array.isArray(photo.html_attributions)
+        ? photo.html_attributions.map((item) => stripHtml(String(item))).filter(Boolean)
+        : []
+      return {
+        name: ref ? `${LEGACY_PREFIX}${ref}` : "",
+        googleMapsUri: place.url || undefined,
+        widthPx: typeof photo.width === "number" ? photo.width : undefined,
+        heightPx: typeof photo.height === "number" ? photo.height : undefined,
+        authorAttributions: labels.map((displayName) => ({ displayName })),
+      }
+    })
+    .filter((photo) => Boolean(photo.name))
+}
+
+function legacyReviews(place: LegacyDetails | null): GoogleReview[] {
+  if (!place || !Array.isArray(place.reviews)) return []
+  return place.reviews.slice(0, 5).map((review) => ({
+    rating: typeof review.rating === "number" ? review.rating : undefined,
+    text: review.text || undefined,
+    originalText: review.text || undefined,
+    textLanguageCode: review.language || undefined,
+    originalTextLanguageCode: review.language || undefined,
+    relativePublishTimeDescription: review.relative_time_description || undefined,
+    publishTime:
+      typeof review.time === "number" ? new Date(review.time * 1000).toISOString() : undefined,
+    authorName: review.author_name || undefined,
+    authorUri: review.author_url || undefined,
+    authorPhotoUri: review.profile_photo_url || undefined,
+    googleMapsUri: place.url || undefined,
+  }))
+}
+
 function mapGooglePlace(place: any, origin?: { latitude: number; longitude: number }): Workshop {
   const latitude = typeof place?.location?.latitude === "number" ? place.location.latitude : undefined
   const longitude = typeof place?.location?.longitude === "number" ? place.location.longitude : undefined
@@ -33,6 +165,7 @@ function mapGooglePlace(place: any, origin?: { latitude: number; longitude: numb
     origin && typeof latitude === "number" && typeof longitude === "number"
       ? haversineDistanceMeters(origin, { latitude, longitude })
       : undefined
+  const photos = normalizePhotos(place.photos)
 
   return {
     id: String(place.id || ""),
@@ -49,8 +182,9 @@ function mapGooglePlace(place: any, origin?: { latitude: number; longitude: numb
       : undefined,
     isOpenNow:
       typeof place?.currentOpeningHours?.openNow === "boolean" ? place.currentOpeningHours.openNow : undefined,
-    photoNames: normalizePhotos(place.photos).map((photo) => photo.name),
-    photos: normalizePhotos(place.photos),
+    photoNames: photos.map((photo) => photo.name),
+    photos,
+    attributions: normalizeAttributions(place.attributions),
     distanceMeters,
     googleMapsUri: place.googleMapsUri,
     websiteUri: place.websiteUri,
@@ -103,6 +237,7 @@ export async function searchGoogleWorkshops(options: {
         "places.nationalPhoneNumber",
         "places.googleMapsUri",
         "places.photos",
+        "places.attributions",
       ].join(","),
     },
     body: JSON.stringify(body),
@@ -125,8 +260,7 @@ export async function searchGoogleWorkshops(options: {
   return workshops
 }
 
-export async function getGoogleWorkshopDetail(placeId: string): Promise<WorkshopDetail | null> {
-  if (!placeId) return null
+async function fetchNewPlace(placeId: string) {
   const fieldMask = [
     "id",
     "displayName",
@@ -142,6 +276,7 @@ export async function getGoogleWorkshopDetail(placeId: string): Promise<Workshop
     "websiteUri",
     "photos",
     "reviews",
+    "attributions",
   ].join(",")
 
   const response = await fetch(
@@ -160,30 +295,74 @@ export async function getGoogleWorkshopDetail(placeId: string): Promise<Workshop
     const message = await response.text()
     throw new Error(`Google Place Details gagal (${response.status}): ${message.slice(0, 500)}`)
   }
+  return response.json()
+}
 
-  const place = await response.json()
+export async function getGoogleWorkshopDetail(placeId: string): Promise<WorkshopDetail | null> {
+  if (!placeId) return null
+
+  const place = await fetchNewPlace(placeId)
+  if (!place) return null
+
   const base = mapGooglePlace(place)
+  let photos = normalizePhotos(place.photos)
+  let reviews = normalizeNewReviews(place.reviews)
+  let legacy: LegacyDetails | null = null
+
+  // Some listings expose rating/count through Places API (New) while omitting the
+  // UGC arrays. In that case, retry the same Place ID through Place Details (Legacy).
+  if (photos.length === 0 || reviews.length === 0) {
+    legacy = await fetchLegacyDetails(placeId).catch(() => null)
+    if (photos.length === 0) photos = legacyPhotos(legacy)
+    if (reviews.length === 0) reviews = legacyReviews(legacy)
+  }
+
   return {
     ...base,
-    reviews: Array.isArray(place.reviews)
-      ? place.reviews.slice(0, 5).map((review: any) => ({
-          rating: typeof review.rating === "number" ? review.rating : undefined,
-          text: review?.text?.text,
-          relativePublishTimeDescription: review.relativePublishTimeDescription,
-          authorName: review?.authorAttribution?.displayName,
-          authorUri: review?.authorAttribution?.uri,
-          authorPhotoUri: review?.authorAttribution?.photoUri,
-          googleMapsUri: review?.googleMapsUri,
-        }))
-      : [],
+    rating:
+      typeof base.rating === "number"
+        ? base.rating
+        : typeof legacy?.rating === "number"
+          ? legacy.rating
+          : undefined,
+    reviewCount:
+      typeof base.reviewCount === "number"
+        ? base.reviewCount
+        : typeof legacy?.user_ratings_total === "number"
+          ? legacy.user_ratings_total
+          : undefined,
+    googleMapsUri: base.googleMapsUri || legacy?.url || undefined,
+    photoNames: photos.map((photo) => photo.name),
+    photos,
+    reviews,
   }
 }
 
 export async function fetchGooglePhoto(photoName: string, maxWidthPx = 1200) {
-  const width = Math.min(Math.max(maxWidthPx, 200), 1600)
+  if (photoName.startsWith(LEGACY_PREFIX)) {
+    const photoReference = photoName.slice(LEGACY_PREFIX.length)
+    if (!photoReference) throw new Error("Legacy photo reference tidak valid")
+    const width = Math.min(Math.max(Math.round(maxWidthPx), 200), 1600)
+    const params = new URLSearchParams({
+      maxwidth: String(width),
+      photo_reference: photoReference,
+      key: apiKey(),
+    })
+    const response = await fetch(`${LEGACY_PHOTO_URL}?${params.toString()}`, {
+      redirect: "follow",
+      cache: "no-store",
+    })
+    if (!response.ok) throw new Error(`Google Place Photo Legacy gagal (${response.status})`)
+    return response
+  }
+
+  const width = Math.min(Math.max(Math.round(maxWidthPx), 200), 2400)
   const response = await fetch(
     `${PLACES_BASE}/${photoName}/media?maxWidthPx=${width}&key=${encodeURIComponent(apiKey())}`,
-    { redirect: "follow", cache: "no-store" },
+    {
+      redirect: "follow",
+      cache: "no-store",
+    },
   )
   if (!response.ok) throw new Error(`Google Place Photo gagal (${response.status})`)
   return response

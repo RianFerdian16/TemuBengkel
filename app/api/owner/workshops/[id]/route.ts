@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getAuthSession } from "@/lib/auth"
 import { isPrismaUniqueConstraintError } from "@/lib/db"
 import { parseWorkshopInput } from "@/lib/workshop-input"
+import { ensureWorkshopCoordinates } from "@/lib/geocode"
 import {
   deleteOwnerWorkshop,
   getOwnerWorkshopById,
@@ -41,7 +42,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const session = await getAuthSession()
     if (!session) return NextResponse.json({ error: "Silakan masuk terlebih dahulu." }, { status: 401 })
 
-    const data = parseWorkshopInput(await request.json())
+    const parsed = parseWorkshopInput(await request.json())
+    const data = await ensureWorkshopCoordinates(parsed)
     const workshop = await updateOwnerWorkshop(session.user.id, safeId, data)
     if (!workshop) return NextResponse.json({ error: "Bengkel tidak ditemukan." }, { status: 404 })
     return NextResponse.json({ workshop })

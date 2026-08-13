@@ -58,6 +58,7 @@ model Workshop {
   latitude              Float?
   longitude             Float?
   services              String[]       @default([])
+  openingHours           String[]       @default([]) @map("opening_hours")
   description           String?        @db.Text
   mechanicCallAvailable Boolean        @default(false) @map("mechanic_call_available")
   status                WorkshopStatus @default(PENDING)

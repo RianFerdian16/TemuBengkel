@@ -31,6 +31,22 @@ export function parseWorkshopInput(body: any): WorkshopWriteInput {
     throw new Error("Longitude tidak valid.")
   }
 
+  const address = optionalText(body?.address, 1000)
+  if (!address || address.length < 5) {
+    throw new Error("Alamat bengkel harus diisi dengan lengkap.")
+  }
+
+  const openingHours = Array.isArray(body?.openingHours)
+    ? body.openingHours
+        .map((item: unknown): string => String(item).trim().slice(0, 80))
+        .filter((item: string) => Boolean(item))
+        .slice(0, 7)
+    : []
+
+  if (!openingHours.some((item: string) => !/:\s*Tutup$/i.test(item))) {
+    throw new Error("Pilih minimal satu hari operasional.")
+  }
+
   const serviceValues: string[] = Array.isArray(body?.services)
     ? body.services
         .map((item: unknown): string => String(item).trim().slice(0, 80))
@@ -41,12 +57,13 @@ export function parseWorkshopInput(body: any): WorkshopWriteInput {
   return {
     googlePlaceId: optionalText(body?.googlePlaceId, 255),
     name,
-    address: optionalText(body?.address, 1000),
+    address,
     phone: optionalText(body?.phone, 40),
     whatsapp: optionalText(body?.whatsapp, 40),
     latitude,
     longitude,
     services,
+    openingHours,
     description: optionalText(body?.description, 1000),
     mechanicCallAvailable: Boolean(body?.mechanicCallAvailable),
   }
