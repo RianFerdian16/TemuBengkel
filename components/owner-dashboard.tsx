@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Building2, CheckCircle2, Clock3, Plus, XCircle } from "lucide-react"
+import { Building2, CheckCircle2, Clock3, LogOut, Plus, XCircle } from "lucide-react"
 
 type OwnerWorkshop = {
   id: string
@@ -44,7 +44,7 @@ export function OwnerDashboard() {
 
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST" })
-    router.replace("/owner/login")
+    router.replace("/")
     router.refresh()
   }
 
@@ -59,7 +59,7 @@ export function OwnerDashboard() {
     <>
       <div className="owner-dashboard-top">
         <div><p className="eyebrow">Dashboard pemilik</p><h1>Kelola bengkel Anda.</h1></div>
-        <div className="owner-dashboard-actions"><Link className="primary-btn inline-btn" href="/owner/workshops/new"><Plus size={17} />Tambah bengkel</Link><button className="secondary-btn" type="button" onClick={logout}>Keluar</button></div>
+        <div className="owner-dashboard-actions"><Link className="primary-btn inline-btn" href="/owner/workshops/new"><Plus size={17} />Tambah bengkel</Link><button className="secondary-btn owner-logout-btn" type="button" onClick={logout}><LogOut size={15} />Keluar portal</button></div>
       </div>
       <p className="hero-copy owner-dashboard-copy">Data yang Anda ubah masuk status <strong>pending</strong> sebelum ditampilkan publik. Kelola alamat, kontak, jam operasional, layanan, dan informasi bengkel dari satu tempat.</p>
 

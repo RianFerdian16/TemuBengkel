@@ -1,14 +1,25 @@
 import Link from "next/link"
-import { BadgeCheck, MapPinned, Wrench } from "lucide-react"
+import { redirect } from "next/navigation"
+import { ArrowLeft, BadgeCheck, MapPinned, Wrench } from "lucide-react"
 import { Brand } from "@/components/brand"
 import { OwnerLoginForm } from "@/components/owner-login-form"
+import { getAuthSession } from "@/lib/auth"
 
-export default function OwnerLoginPage() {
+export default async function OwnerLoginPage() {
+  const session = await getAuthSession().catch(() => null)
+  if (session) redirect("/owner/dashboard")
+
   return (
     <main className="owner-auth-page">
       <div className="owner-auth-shell">
         <section className="owner-auth-intro">
-          <Brand />
+          <div className="owner-auth-brand-row">
+            <Brand />
+            <Link className="owner-auth-back" href="/">
+              <ArrowLeft size={13} strokeWidth={2.2} />
+              <span>Halaman pengguna</span>
+            </Link>
+          </div>
           <div className="owner-auth-heading">
             <p className="eyebrow">Portal pemilik bengkel</p>
             <h1>Kelola listing tanpa mengganggu data publik.</h1>

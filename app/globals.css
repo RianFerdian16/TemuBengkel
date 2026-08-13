@@ -2250,3 +2250,75 @@ img { display: block; max-width: 100%; }
     height: 42px;
   }
 }
+
+/* ==========================================================================
+   TEMUBENGKEL V24 — clear owner/user mode navigation
+   ========================================================================== */
+.owner-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.owner-console-label {
+  color: var(--muted);
+  font: 800 9px/1 ui-monospace, monospace;
+  letter-spacing: .15em;
+}
+.owner-user-return,
+.owner-auth-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  border: 1px solid #c7cbd1;
+  border-radius: 4px;
+  padding: 0 10px;
+  background: #fffefb;
+  color: #202630;
+  font-size: 10px;
+  font-weight: 800;
+  transition: border-color .16s ease, transform .16s ease, background .16s ease;
+}
+.owner-user-return:hover,
+.owner-auth-back:hover {
+  border-color: #202630;
+  background: white;
+  transform: translateY(-1px);
+}
+.owner-auth-brand-row {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.owner-auth-back {
+  border-color: #535c6a;
+  background: rgb(255 255 255 / 4%);
+  color: #eef2f8;
+}
+.owner-auth-back:hover {
+  border-color: #8aaeff;
+  background: rgb(36 105 232 / 14%);
+}
+.owner-logout-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+@media (max-width: 760px) {
+  .owner-topbar-actions { gap: 7px; }
+  .owner-console-label { display: none; }
+  .owner-user-return { min-height: 34px; padding: 0 9px; font-size: 9px; }
+  .owner-auth-brand-row { align-items: flex-start; }
+  .owner-auth-back { min-height: 32px; padding: 0 9px; font-size: 9px; }
+}
+
+@media (max-width: 390px) {
+  .owner-user-return span { max-width: 76px; line-height: 1.15; text-align: center; }
+  .owner-auth-back span { max-width: 66px; line-height: 1.15; text-align: center; }
+}
