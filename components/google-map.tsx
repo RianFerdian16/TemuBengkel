@@ -105,12 +105,25 @@ export function GoogleMap({
       const bounds = new google.maps.LatLngBounds()
 
       if (userLocation) {
-        const pin = new PinElement({ glyphText: "•", scale: 0.9 })
+        const content = document.createElement("div")
+        content.className = "tb-user-location-marker"
+        content.setAttribute("aria-hidden", "true")
+        content.innerHTML = `
+          <span class="tb-user-location-halo"></span>
+          <span class="tb-user-location-arrow">
+            <svg viewBox="0 0 32 32" focusable="false" aria-hidden="true">
+              <path d="M16 2.7 29 28l-13-6.4L3 28 16 2.7Z" fill="currentColor"/>
+              <path d="M16 8.5v10.2" stroke="white" stroke-width="2.4" stroke-linecap="round" opacity=".96"/>
+            </svg>
+          </span>
+        `
+
         const marker = new AdvancedMarkerElement({
           map,
           position: { lat: userLocation.latitude, lng: userLocation.longitude },
-          title: "Lokasi Anda",
-          content: pin,
+          title: "Posisi Anda sekarang",
+          content,
+          zIndex: 1000,
         })
         markersRef.current.push(marker)
         bounds.extend({ lat: userLocation.latitude, lng: userLocation.longitude })
