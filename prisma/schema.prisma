@@ -20,6 +20,11 @@ enum WorkshopStatus {
   REJECTED @map("rejected")
 }
 
+enum AuthTokenType {
+  EMAIL_VERIFY   @map("email_verify")
+  PASSWORD_RESET @map("password_reset")
+}
+
 model User {
   id           String    @id @default(uuid()) @db.Uuid
   fullName     String    @map("full_name") @db.VarChar(120)
@@ -28,9 +33,11 @@ model User {
   role         UserRole  @default(OWNER)
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
-  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(3)
-  sessions     Session[]
-  workshops    Workshop[]
+  deletedAt       DateTime?   @map("deleted_at") @db.Timestamptz(3)
+  emailVerifiedAt DateTime?   @map("email_verified_at") @db.Timestamptz(3)
+  sessions        Session[]
+  authTokens      AuthToken[]
+  workshops       Workshop[]
 
   @@index([deletedAt])
   @@map("users")
@@ -49,6 +56,30 @@ model Session {
   @@map("sessions")
 }
 
+model AuthToken {
+  id        String        @id @default(uuid()) @db.Uuid
+  tokenHash String        @unique @map("token_hash") @db.Char(64)
+  userId    String        @map("user_id") @db.Uuid
+  type      AuthTokenType
+  expiresAt DateTime      @map("expires_at") @db.Timestamptz(3)
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@index([expiresAt])
+  @@map("auth_tokens")
+}
+
+model RateLimitBucket {
+  key         String   @id @db.Char(64)
+  count       Int      @default(0)
+  windowStart DateTime @map("window_start") @db.Timestamptz(3)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([updatedAt])
+  @@map("rate_limit_buckets")
+}
+
 model Workshop {
   id                    String         @id @default(uuid()) @db.Uuid
   ownerId               String         @map("owner_id") @db.Uuid
@@ -61,6 +92,7 @@ model Workshop {
   longitude             Float?
   services              String[]       @default([])
   openingHours           String[]       @default([]) @map("opening_hours")
+  timeZone               String         @default("Asia/Jakarta") @map("time_zone") @db.VarChar(64)
   description           String?        @db.Text
   mechanicCallAvailable Boolean        @default(false) @map("mechanic_call_available")
   status                WorkshopStatus @default(PENDING)

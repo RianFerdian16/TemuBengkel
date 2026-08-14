@@ -1,144 +1,83 @@
 # TEMUBENGKEL
 
-TEMUBENGKEL adalah web app Next.js untuk mencari bengkel motor berdasarkan lokasi. Data publik bengkel (rating, review, foto, jam buka, telepon, dan Google Maps URL) berasal dari Google Maps/Places. Data tambahan dari pemilik bengkel (WhatsApp, layanan, deskripsi, montir panggilan, dan status moderasi) disimpan di Neon PostgreSQL.
+TEMUBENGKEL adalah web app mobile-first untuk mencari bengkel motor berdasarkan nama, area, alamat, atau lokasi perangkat. Hasil publik menggabungkan Google Places dengan listing pemilik yang sudah melalui moderasi TemuBengkel.
 
 ## Stack
 
 - Next.js 16 + React 19 + TypeScript
-- Tailwind CSS 4
+- Tailwind CSS 4 / CSS feature styles
 - Google Maps JavaScript API + Places API (New)
 - Neon PostgreSQL
 - Prisma ORM 7 + `@prisma/adapter-neon`
-- Auth owner internal: password `scrypt` + opaque session cookie HTTP-only
+- Auth internal: `scrypt`, opaque HTTP-only sessions, hashed one-time auth tokens
 - Vercel Analytics
 
-## 1. Environment variables
-
-Copy `.env.example` menjadi `.env.local`.
+## Environment variables utama
 
 ```env
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
 NEXT_PUBLIC_GOOGLE_MAP_ID=
 GOOGLE_MAPS_SERVER_API_KEY=
-
 DATABASE_URL=
 DIRECT_URL=
 ```
 
-Untuk Neon, buka project **Temu Bengkel** lalu klik **Connect**:
+Untuk production password recovery + email verification, V30 juga mendukung:
 
-- `DATABASE_URL` = **Pooled connection** (hostname mengandung `-pooler`). Ini dipakai aplikasi saat runtime.
-- `DIRECT_URL` = **Direct connection** (tanpa `-pooler`). Ini dipakai Prisma CLI untuk migration dan Prisma Studio.
+```env
+APP_URL=https://temubengkel.vercel.app
+RESEND_API_KEY=
+EMAIL_FROM=TemuBengkel <sender@your-verified-domain.example>
+```
 
-Jangan commit `.env.local` ke Git/GitHub.
+Tanpa konfigurasi email, registration tetap backward-compatible agar owner tidak terkunci. Untuk production penuh, konfigurasi email sangat disarankan.
 
-## 2. Install dependencies
-
-Pakai package manager yang kamu nyaman gunakan.
+## Install / migration
 
 ```bash
 npm install
-```
-
-atau:
-
-```bash
-pnpm install
-```
-
-`postinstall` otomatis menjalankan `prisma generate`.
-
-## 3. Buat tabel di Neon
-
-Migration awal sudah disertakan di folder `prisma/migrations`.
-
-Setelah `DIRECT_URL` diisi:
-
-```bash
+npm run db:generate
 npm run db:deploy
-```
-
-atau:
-
-```bash
-pnpm db:deploy
-```
-
-Migration akan membuat:
-
-- `users` — akun pemilik/admin/customer untuk pengembangan berikutnya
-- `sessions` — session login owner; token mentah hanya berada di cookie, database menyimpan hash SHA-256
-- `workshops` — data tambahan TEMUBENGKEL dan status moderasi
-
-Untuk melihat database dengan UI Prisma:
-
-```bash
-npm run db:studio
-```
-
-## 4. Jalankan development server
-
-```bash
 npm run dev
 ```
 
-Lalu buka `http://localhost:3000`.
+V30 menambahkan migration untuk timezone listing, email verification/password-reset token, dan persistent rate limiting.
 
-## 5. Alur owner
+## Public flow
 
-1. Owner membuka `/owner/register`.
-2. Password di-hash menggunakan Node.js `scrypt` sebelum disimpan.
-3. Setelah registrasi berhasil, owner langsung mendapat session HTTP-only dan masuk ke dashboard.
-4. Owner menambahkan bengkel atau menghubungkan listing ke Google Place ID.
-5. Listing baru/yang diedit selalu kembali ke status `pending`.
-6. Listing baru tampil ke publik setelah status menjadi `approved`.
+`Home search → List/Map → Detail → WhatsApp / Telepon / Google Maps`
 
-Untuk MVP, approval dapat dilakukan lewat Prisma Studio atau Neon SQL Editor. Contoh SQL:
+Public user tidak perlu login. Search dapat menerima nama bengkel, area, atau alamat, dan dapat memakai lokasi perangkat.
 
-```sql
-UPDATE workshops
-SET status = 'approved', updated_at = NOW()
-WHERE id = 'UUID_BENGKEL';
-```
+## Owner flow
 
-## 6. Google Maps
+1. Register/login owner.
+2. Tambah atau edit listing bengkel.
+3. Pilih lokasi dengan pencarian alamat, GPS, dan map picker; alamat mengikuti titik map melalui reverse geocoding.
+4. Submission masuk `pending`.
+5. Admin approve/reject.
+6. Hanya listing `approved` yang masuk hasil publik.
+7. Edit listing yang sudah approved mengembalikan status ke `pending`.
 
-Aktifkan minimal:
+Jam buka owner dihitung menggunakan timezone listing (`Asia/Jakarta`, `Asia/Makassar`, atau `Asia/Jayapura`).
 
-- Maps JavaScript API
-- Places API (New)
+## Admin flow
 
-Rekomendasi key:
+Admin Console memiliki session terpisah dan server-side role checks. Admin dapat melihat ringkasan, pending review, seluruh listing, owner directory, lalu approve/reject submission dengan alasan.
 
-- Browser key (`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`): batasi dengan HTTP referrer dan hanya izinkan Maps JavaScript API.
-- Server key (`GOOGLE_MAPS_SERVER_API_KEY`): simpan server-side dan batasi hanya ke Places API (New).
+## Security
 
-## 7. Struktur penting
+- Password menggunakan Node.js `scrypt`.
+- Session token mentah hanya berada di HTTP-only cookie; database menyimpan hash.
+- Owner hanya dapat mengubah listing miliknya sendiri.
+- Owner tidak dapat self-approve.
+- Login owner/admin, registration, password recovery, dan geocoding memiliki database-backed throttling.
+- Password-reset dan email-verification token disimpan dalam bentuk hash dan memiliki expiry.
+- Password reset mencabut seluruh session lama.
+- `.env.local` tidak boleh di-commit.
 
-```text
-app/
-  api/auth/                 register, login, logout, session
-  api/owner/workshops/      CRUD milik owner
-  api/places/               proxy Google Places/Photos
-  owner/                    halaman owner
-components/                 UI dan experiences
-lib/
-  auth.ts                   hashing + database-backed session
-  db.ts                     Prisma + Neon adapter
-  workshop-repository.ts    query PostgreSQL
-  workshop-input.ts         validasi input bengkel
-  workshop-data.ts          merge Google + data owner
-prisma/
-  schema.prisma
-  migrations/
-```
+## Catatan Google data
 
-## 8. Catatan keamanan
+TEMUBENGKEL hanya meminta field Google Places yang benar-benar dirender pada flow saat ini. Foto dan review individual tidak diambil pada normal detail flow; rating dan jumlah review tetap dapat ditampilkan bila tersedia dari API resmi.
 
-- Endpoint owner tidak menerima `owner_id` dari client; owner selalu diambil dari session server.
-- Query edit/get/delete bengkel selalu dibatasi ke `ownerId` yang sedang login.
-- Password tidak pernah disimpan plaintext.
-- Session cookie bersifat HTTP-only, `SameSite=Lax`, dan `Secure` di production.
-- File `.env.local`, `.next`, `node_modules`, dan Prisma generated client tidak disimpan di Git.
-
-Rate limiting, password reset/email verification, dan admin moderation UI masih merupakan pekerjaan tahap production berikutnya.
+Lihat `V30_PRODUCT_HARDENING_NOTES.md` untuk rincian perubahan V30 dan smoke-test checklist.

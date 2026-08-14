@@ -223,8 +223,10 @@ export function OwnerWorkshopForm({ workshopId }: { workshopId?: string }) {
     setLocationBusy(true)
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setLocation(position.coords.latitude, position.coords.longitude)
-        setLocationHint("Peta diarahkan ke lokasi perangkat saat ini. Geser lagi bila titik bengkel belum pas.")
+        const latitude = position.coords.latitude
+        const longitude = position.coords.longitude
+        setLocationFromMap(latitude, longitude)
+        setLocationHint("Lokasi perangkat ditemukan. Alamat sedang disesuaikan otomatis dari titik tersebut.")
         setLocationBusy(false)
       },
       () => {

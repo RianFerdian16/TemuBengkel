@@ -5,7 +5,8 @@ import { Brand } from "@/components/brand"
 import { OwnerLoginForm } from "@/components/owner-login-form"
 import { getAuthSession } from "@/lib/auth"
 
-export default async function OwnerLoginPage() {
+export default async function OwnerLoginPage({ searchParams }: { searchParams: Promise<{ verification?: string; reset?: string }> }) {
+  const params = await searchParams
   const session = await getAuthSession().catch(() => null)
   if (session) redirect("/owner/dashboard")
 
@@ -33,6 +34,9 @@ export default async function OwnerLoginPage() {
         </section>
         <section className="owner-auth-card">
           <div className="owner-auth-card-heading"><span>OWNER ACCESS</span><h2>Masuk ke dashboard</h2><p>Pengguna yang hanya mencari bengkel tidak perlu login.</p></div>
+          {params.verification === "success" && <p className="auth-page-status success-note">Email berhasil diverifikasi. Silakan masuk.</p>}
+          {params.verification === "invalid" && <p className="auth-page-status error-note">Tautan verifikasi tidak valid atau sudah kedaluwarsa.</p>}
+          {params.reset === "success" && <p className="auth-page-status success-note">Kata sandi berhasil diperbarui. Silakan masuk kembali.</p>}
           <OwnerLoginForm />
           <p className="owner-auth-switch">Belum punya akun? <Link href="/owner/register">Daftar sebagai pemilik</Link></p>
         </section>

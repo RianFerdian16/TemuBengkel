@@ -295,10 +295,10 @@ export function SearchExperience({ initialQuery = "", initialLocation = "", init
   const hasGoogleResults = useMemo(() => workshops.some((item) => item.source === "google"), [workshops])
   const hasOwnerResults = useMemo(() => workshops.some((item) => item.source === "owner" || Boolean(item.ownerListingId)), [workshops])
   const sourceSummary = hasGoogleResults && hasOwnerResults
-    ? <>Data dari <b translate="no">Google Maps</b> + listing terverifikasi TemuBengkel</>
+    ? <>Data dari <b translate="no">Google Maps</b> + listing yang telah diverifikasi TemuBengkel</>
     : hasGoogleResults
       ? <>Data publik dari <b translate="no">Google Maps</b></>
-      : <>Listing terverifikasi TemuBengkel</>
+      : <>Listing telah diverifikasi TemuBengkel</>
   const canUseDistanceFilter = Boolean(searchOrigin)
 
   useEffect(() => {

@@ -1,0 +1,231 @@
+/* =========================================================
+   TEMUBENGKEL V29 — product quality / trust / search polish
+   ========================================================= */
+.search-partial-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin-top: 10px;
+  padding: 9px 10px;
+  border: 1px solid #d7b76b;
+  border-radius: 5px;
+  background: #fff9e9;
+  color: #6f5514;
+  font-size: 10px;
+  font-weight: 720;
+  line-height: 1.45;
+}
+.search-partial-warning svg { flex: 0 0 auto; margin-top: 1px; }
+.search-origin-note {
+  display: block;
+  max-width: 420px;
+  margin-top: 2px;
+  color: #707782;
+  font-size: 9px;
+  font-weight: 620;
+  line-height: 1.35;
+}
+.filter-group-disabled { opacity: .72; }
+.filter-group-disabled .distance-range { cursor: not-allowed; }
+.filter-data-note {
+  margin: 6px 0 0;
+  padding: 10px 11px;
+  border: 1px dashed #c9cbd0;
+  border-radius: 5px;
+  background: #f8f8f5;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+.workshop-source-badge {
+  display: inline-flex;
+  min-height: 18px;
+  align-items: center;
+  border: 1px solid #c8d8f7;
+  border-radius: 999px;
+  padding: 2px 6px;
+  background: #eef4ff;
+  color: #2358b7;
+  font-size: 7px;
+  font-style: normal;
+  font-weight: 850;
+  line-height: 1;
+  white-space: nowrap;
+}
+.workshop-source-badge.linked {
+  border-color: #c9d3df;
+  background: #f4f6f8;
+  color: #4f5d6d;
+}
+.map-recenter-user {
+  position: absolute;
+  z-index: 6;
+  top: 14px;
+  right: 14px;
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #bfc6d0;
+  border-radius: 6px;
+  padding: 0 11px;
+  background: rgba(255,255,255,.96);
+  color: #1c5fcd;
+  box-shadow: 0 4px 14px rgba(19,31,48,.12);
+  font-size: 10px;
+  font-weight: 820;
+  cursor: pointer;
+}
+.map-recenter-user:hover { border-color: #1c5fcd; }
+.detail-owner-source-card { align-content: center; }
+.detail-owner-source-mark {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 14px 0 8px;
+  color: #17633f;
+}
+.detail-owner-source-mark svg { color: #168258; }
+.detail-owner-source-mark strong { font-size: 22px; letter-spacing: -.035em; }
+
+/* Route-level detail skeleton keeps navigation responsive during Places requests. */
+.skeleton-line,
+.skeleton-button,
+.detail-loading-map {
+  position: relative;
+  overflow: hidden;
+  background: #e9e8e3;
+}
+.skeleton-line::after,
+.skeleton-button::after,
+.detail-loading-map::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.58), transparent);
+  transform: translateX(-100%);
+  animation: tb-skeleton 1.25s ease-in-out infinite;
+}
+@keyframes tb-skeleton { to { transform: translateX(100%); } }
+.detail-loading-back { width: 150px; height: 13px; margin: 2px 0 18px; border-radius: 3px; }
+.detail-loading-overview { pointer-events: none; }
+.skeleton-kicker { width: 90px; height: 10px; border-radius: 3px; }
+.skeleton-title { width: min(460px, 86%); height: 44px; margin-top: 14px; border-radius: 4px; }
+.skeleton-address { width: min(520px, 92%); height: 17px; margin-top: 18px; border-radius: 3px; }
+.detail-loading-rating { display: grid; align-content: center; gap: 12px; }
+.skeleton-rating { width: 100px; height: 42px; border-radius: 4px; }
+.skeleton-short { width: 120px; height: 12px; border-radius: 3px; }
+.detail-loading-actions { display: grid; grid-template-columns: 1.25fr 1fr 1fr; gap: 8px; }
+.skeleton-button { min-height: 44px; border-radius: 5px; }
+.skeleton-section-title { width: 220px; height: 26px; margin-bottom: 14px; border-radius: 4px; }
+.detail-loading-map { height: 360px; border: 1px solid var(--border); }
+
+@media (max-width: 680px) {
+  /* Readability pass: no 7–9px critical copy on mobile. */
+  .search-app-page .map-search-field input { font-size: 13px; }
+  .search-app-page .search-submit-btn,
+  .search-app-page .search-use-location-btn,
+  .search-app-page .view-mode-btn { font-size: 11px; }
+  .search-app-page .mobile-result-summary strong { font-size: 13px; }
+  .search-app-page .mobile-result-summary span { font-size: 10px; line-height: 1.4; }
+  .search-origin-note { font-size: 10px; }
+  .search-app-page .mobile-list-workshop { min-height: 88px; }
+  .search-app-page .mobile-list-copy { padding: 12px 32px 11px 12px; }
+  .search-app-page .mobile-list-title strong { font-size: 12px; line-height: 1.3; }
+  .search-app-page .mobile-list-title i { padding: 3px 6px; font-size: 9px; }
+  .search-app-page .mobile-list-copy > small { margin-top: 6px; font-size: 10px; line-height: 1.45; }
+  .search-app-page .mobile-list-meta { gap: 7px; margin-top: 8px; flex-wrap: wrap; }
+  .search-app-page .mobile-list-meta b { font-size: 10px; }
+  .workshop-source-badge { min-height: 19px; padding: 3px 6px; font-size: 8px; }
+  .search-app-page .map-card-title-row strong { font-size: 12px; }
+  .search-app-page .map-card-title-row span,
+  .search-app-page .map-card-title-row b,
+  .search-app-page .map-card-meta > span { font-size: 9px; }
+  .search-app-page .map-card-actions a { min-height: 37px; font-size: 10px; }
+  .map-recenter-user { top: 10px; right: 10px; min-height: 38px; padding: 0 10px; font-size: 10px; }
+  .filter-data-note { font-size: 10px; }
+  .search-partial-warning { font-size: 10px; }
+  .mobile-nav a { font-size: 10.5px; }
+  .detail-owner-source-mark strong { font-size: 20px; }
+  .detail-loading-actions { grid-template-columns: 1fr; }
+  .detail-loading-map { height: min(52vh, 340px); min-height: 280px; }
+}
+
+/* TEMUBENGKEL V30 — production hardening UI */
+.landing-quick-search {
+  display: grid;
+  gap: 9px;
+  max-width: 620px;
+  margin-top: 26px;
+}
+.landing-search-form {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 54px;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--ink);
+  border-radius: 6px;
+  padding: 5px 5px 5px 15px;
+  background: #fffefb;
+  box-shadow: 4px 4px 0 rgb(23 28 37 / 8%);
+}
+.landing-search-form > svg { color: var(--primary); }
+.landing-search-form input {
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--foreground);
+  font: 720 13px/1.3 inherit;
+}
+.landing-search-form input::placeholder { color: #818690; }
+.landing-search-form button {
+  min-height: 42px;
+  border: 1px solid var(--ink);
+  border-radius: 4px;
+  padding: 0 18px;
+  background: var(--ink);
+  color: white;
+  font-size: 11px;
+  font-weight: 850;
+  cursor: pointer;
+}
+.landing-location-action,
+.auth-text-button,
+.auth-inline-link {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 820;
+  text-decoration: none;
+  cursor: pointer;
+}
+.landing-location-action:disabled,
+.auth-text-button:disabled { opacity: .55; cursor: wait; }
+.landing-search-error { margin: 0; color: #a43129; font-size: 10px; font-weight: 720; }
+.landing-actions-secondary { margin-top: 18px; }
+.auth-label-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.owner-form .auth-label-row label { margin-bottom: 0; }
+.auth-label-row a { color: var(--primary); font-size: 9px; font-weight: 800; text-decoration: none; }
+.auth-text-button { margin-top: 4px; }
+.auth-inline-link { margin-top: 4px; }
+.auth-page-status { margin: 0 0 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 5px; font-size: 10px; font-weight: 750; }
+.auth-page-status.success-note { border-color: #9bcab5; background: #f0faf5; color: #075b3d; }
+.auth-page-status.error-note { border-color: #e3aaa4; background: #fff2f0; color: #a92c22; }
+.owner-auth-shell-compact { max-width: 1020px; }
+
+@media (max-width: 680px) {
+  .landing-quick-search { margin-top: 20px; }
+  .landing-search-form { min-height: 52px; padding-left: 12px; }
+  .landing-search-form input { font-size: 12px; }
+  .landing-search-form button { padding: 0 14px; }
+  .landing-location-action { min-height: 32px; font-size: 10.5px; }
+}

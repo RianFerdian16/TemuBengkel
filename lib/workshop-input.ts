@@ -64,6 +64,7 @@ export function parseWorkshopInput(body: any): WorkshopWriteInput {
     longitude,
     services,
     openingHours,
+    timeZone: "Asia/Jakarta",
     description: optionalText(body?.description, 1000),
     mechanicCallAvailable: Boolean(body?.mechanicCallAvailable),
   }

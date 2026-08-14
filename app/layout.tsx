@@ -1,6 +1,9 @@
 import { Analytics } from "@vercel/analytics/next"
 import type { Metadata, Viewport } from "next"
 import "./globals.css"
+import "./styles/owner.css"
+import "./styles/console.css"
+import "./styles/quality.css"
 
 export const metadata: Metadata = {
   title: "TEMUBENGKEL — Cari bengkel motor terdekat",

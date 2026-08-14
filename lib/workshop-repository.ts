@@ -11,6 +11,7 @@ export type WorkshopWriteInput = {
   longitude: number | null
   services: string[]
   openingHours: string[]
+  timeZone: string
   description: string | null
   mechanicCallAvailable: boolean
 }
@@ -35,7 +36,8 @@ function mapPublicWorkshop(row: any): Workshop {
     longitude: typeof row.longitude === "number" ? row.longitude : undefined,
     services: Array.isArray(row.services) ? row.services : [],
     openingHours: Array.isArray(row.openingHours) ? row.openingHours : [],
-    isOpenNow: isWorkshopOpenNow(Array.isArray(row.openingHours) ? row.openingHours : []),
+    timeZone: row.timeZone || "Asia/Jakarta",
+    isOpenNow: isWorkshopOpenNow(Array.isArray(row.openingHours) ? row.openingHours : [], row.timeZone || "Asia/Jakarta"),
     description: row.description || undefined,
     mechanicCallAvailable: Boolean(row.mechanicCallAvailable),
     status: statusToApi(row.status),
@@ -56,6 +58,7 @@ export function mapOwnerWorkshopForApi(row: any) {
     longitude: row.longitude,
     services: Array.isArray(row.services) ? row.services : [],
     opening_hours: Array.isArray(row.openingHours) ? row.openingHours : [],
+    time_zone: row.timeZone || "Asia/Jakarta",
     description: row.description,
     mechanic_call_available: Boolean(row.mechanicCallAvailable),
     status: statusToApi(row.status),
@@ -77,17 +80,62 @@ function toPrismaData(data: WorkshopWriteInput) {
     longitude: data.longitude,
     services: data.services,
     openingHours: data.openingHours,
+    timeZone: data.timeZone,
     description: data.description,
     mechanicCallAvailable: data.mechanicCallAvailable,
   }
 }
 
-export async function getPublicOwnerWorkshops() {
+export async function getPublicOwnerWorkshops(options: {
+  searchText?: string
+  origin?: { latitude: number; longitude: number }
+  radiusMeters?: number
+  googlePlaceIds?: string[]
+} = {}) {
   const prisma = getPrisma() as any
+  const searchText = (options.searchText || "").trim()
+  const tokens = searchText
+    .toLocaleLowerCase("id-ID")
+    .split(/[^a-z0-9]+/i)
+    .map((item) => item.trim())
+    .filter((item) => item.length >= 2)
+    .slice(0, 8)
+  const googlePlaceIds = (options.googlePlaceIds || []).filter(Boolean).slice(0, 50)
+  const or: any[] = []
+
+  if (googlePlaceIds.length) or.push({ googlePlaceId: { in: googlePlaceIds } })
+  if (searchText) {
+    or.push({ name: { contains: searchText, mode: "insensitive" } })
+    or.push({ address: { contains: searchText, mode: "insensitive" } })
+    or.push({ description: { contains: searchText, mode: "insensitive" } })
+    if (tokens.length) {
+      or.push(...tokens.flatMap((token) => [
+        { name: { contains: token, mode: "insensitive" } },
+        { address: { contains: token, mode: "insensitive" } },
+        { description: { contains: token, mode: "insensitive" } },
+      ]))
+      or.push({ services: { hasSome: tokens } })
+    }
+  }
+
+  if (options.origin) {
+    const radius = Math.min(Math.max(options.radiusMeters || 15_000, 1_000), 50_000)
+    const latDelta = radius / 111_320
+    const lngScale = Math.max(0.2, Math.cos((options.origin.latitude * Math.PI) / 180))
+    const lngDelta = radius / (111_320 * lngScale)
+    or.push({
+      latitude: { gte: options.origin.latitude - latDelta, lte: options.origin.latitude + latDelta },
+      longitude: { gte: options.origin.longitude - lngDelta, lte: options.origin.longitude + lngDelta },
+    })
+  }
+
+  // Important: pre-filter in Postgres before applying a safety cap. This avoids
+  // the old behavior where only the 100 newest approved listings were searchable.
+  if (!or.length) return []
   const rows = await prisma.workshop.findMany({
-    where: { status: "APPROVED" },
-    orderBy: { createdAt: "desc" },
-    take: 100,
+    where: { status: "APPROVED", OR: or },
+    orderBy: { updatedAt: "desc" },
+    take: 250,
   })
   return rows.map(mapPublicWorkshop)
 }

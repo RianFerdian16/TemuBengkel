@@ -5,7 +5,8 @@ import { AdminLoginForm } from "@/components/admin-login-form"
 import { Brand } from "@/components/brand"
 import { getAdminAuthSession } from "@/lib/auth"
 
-export default async function AdminLoginPage() {
+export default async function AdminLoginPage({ searchParams }: { searchParams: Promise<{ reset?: string }> }) {
+  const params = await searchParams
   const session = await getAdminAuthSession().catch(() => null)
   if (session) redirect("/admin")
 
@@ -23,6 +24,7 @@ export default async function AdminLoginPage() {
         </section>
         <section className="owner-auth-card admin-auth-card">
           <div className="owner-auth-card-heading"><span>ADMIN ACCESS</span><h2>Masuk ke console</h2><p>Gunakan akun dengan role ADMIN. Akun pemilik biasa tidak dapat masuk.</p></div>
+          {params.reset === "success" && <p className="auth-page-status success-note">Kata sandi berhasil diperbarui. Silakan masuk kembali.</p>}
           <AdminLoginForm />
           <p className="owner-auth-switch">Bukan admin? <Link href="/">Kembali ke TemuBengkel</Link></p>
         </section>

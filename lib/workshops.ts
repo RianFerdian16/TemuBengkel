@@ -28,6 +28,7 @@ export type Workshop = {
   rating?: number
   reviewCount?: number
   openingHours?: string[]
+  timeZone?: string
   isOpenNow?: boolean
   services?: string[]
   photoNames?: string[]
@@ -61,11 +62,11 @@ export type WorkshopDetail = Workshop & {
   reviews?: GoogleReview[]
 }
 
-export function isWorkshopOpenNow(openingHours?: string[]) {
+export function isWorkshopOpenNow(openingHours?: string[], timeZone = "Asia/Jakarta") {
   if (!Array.isArray(openingHours) || openingHours.length === 0) return undefined
 
   const parts = new Intl.DateTimeFormat("id-ID", {
-    timeZone: "Asia/Jakarta",
+    timeZone,
     weekday: "long",
     hour: "2-digit",
     minute: "2-digit",
@@ -151,7 +152,8 @@ export function mergeWorkshops(primary: Workshop[], ownerListings: Workshop[]) {
       whatsapp: owner.whatsapp || item.whatsapp,
       services: owner.services?.length ? owner.services : item.services,
       openingHours: owner.openingHours?.length ? owner.openingHours : item.openingHours,
-      isOpenNow: owner.openingHours?.length ? isWorkshopOpenNow(owner.openingHours) : item.isOpenNow,
+      timeZone: owner.openingHours?.length ? owner.timeZone : item.timeZone,
+      isOpenNow: owner.openingHours?.length ? isWorkshopOpenNow(owner.openingHours, owner.timeZone) : item.isOpenNow,
       description: owner.description || item.description,
       mechanicCallAvailable: owner.mechanicCallAvailable,
     }

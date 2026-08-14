@@ -83,9 +83,9 @@ export default async function WorkshopPage({ params }: { params: Promise<{ id: s
                 </span>
               </div>
             ) : (
-              <div className="detail-rating-card-v15 detail-owner-source-card" aria-label="Listing TemuBengkel terverifikasi">
+              <div className="detail-rating-card-v15 detail-owner-source-card" aria-label="Listing telah diverifikasi TemuBengkel">
                 <span className="detail-rating-label-v15">Listing TemuBengkel</span>
-                <div className="detail-owner-source-mark"><ShieldCheck size={28} /><strong>Terverifikasi</strong></div>
+                <div className="detail-owner-source-mark"><ShieldCheck size={28} /><strong>Listing telah diverifikasi</strong></div>
                 <span className="detail-review-count-v15">Data bengkel telah melalui review admin sebelum tampil publik.</span>
               </div>
             )}
@@ -164,7 +164,7 @@ export default async function WorkshopPage({ params }: { params: Promise<{ id: s
 
           <div className="places-attribution-block detail-source-v15">
             <span>
-              Sumber data: <strong>{hasGoogleSource && hasOwnerSource ? "Google Maps + data pemilik terverifikasi" : hasGoogleSource ? "Google Maps" : "TemuBengkel"}</strong>
+              Sumber data: <strong>{hasGoogleSource && hasOwnerSource ? "Google Maps + data pemilik yang telah ditinjau" : hasGoogleSource ? "Google Maps" : "TemuBengkel"}</strong>
             </span>
             {hasGoogleSource && workshop.attributions?.map((attribution, index) => (
               attribution.providerUri

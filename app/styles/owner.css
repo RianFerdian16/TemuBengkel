@@ -1,0 +1,421 @@
+/* TEMUBENGKEL V18 — owner-friendly workshop form */
+.owner-workshop-form { padding: 0; overflow: hidden; }
+.owner-form-section { padding: 24px; }
+.owner-form-section + .owner-form-section { border-top: 1px solid var(--border-strong); }
+.owner-form-section-heading { display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: start; gap: 12px; margin-bottom: 18px; }
+.owner-form-section-heading > span { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid var(--ink); border-radius: 50%; color: var(--primary); font: 850 10px/1 ui-monospace, monospace; }
+.owner-form-section-heading strong { display: block; font-size: 14px; letter-spacing: -.01em; }
+.owner-form-section-heading p { margin: 4px 0 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
+.owner-workshop-form .form-grid.two-col { margin-top: 0; }
+.owner-contact-grid { margin-top: 0 !important; }
+.auto-location-note { display: flex; align-items: flex-start; gap: 11px; margin-top: 14px; padding: 13px 14px; border: 1px solid #9db6e8; border-radius: var(--radius-sm); background: var(--surface-blue); }
+.auto-location-note > svg { flex: 0 0 auto; margin-top: 1px; color: var(--primary); }
+.auto-location-note strong { display: block; font-size: 12px; }
+.auto-location-note p { margin: 3px 0 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
+.schedule-heading { grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; }
+.schedule-copy-btn { display: inline-flex; min-height: 34px; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 0 10px; background: #fffefb; color: var(--foreground); font-size: 10px; font-weight: 850; cursor: pointer; }
+.schedule-copy-btn:hover { border-color: var(--ink); transform: translateY(-1px); }
+.schedule-list { display: grid; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); overflow: hidden; }
+.schedule-row { display: grid; grid-template-columns: 150px minmax(0, 1fr); min-height: 60px; align-items: center; gap: 16px; padding: 9px 12px; background: #fffefb; }
+.schedule-row + .schedule-row { border-top: 1px solid var(--border); }
+.schedule-row.is-closed { background: #f4f2ed; }
+.owner-workshop-form .schedule-day-toggle { display: flex; align-items: center; gap: 9px; margin: 0 !important; cursor: pointer; }
+.schedule-day-toggle input { width: 17px; height: 17px; min-height: 0; margin: 0; accent-color: var(--primary); }
+.schedule-day-toggle span { color: var(--foreground); font-size: 12px; font-weight: 850; letter-spacing: 0; text-transform: none; }
+.schedule-times { display: grid; grid-template-columns: minmax(110px, 1fr) auto minmax(110px, 1fr); align-items: end; gap: 9px; }
+.owner-workshop-form .schedule-times label { display: grid; gap: 5px; margin: 0 !important; }
+.schedule-times label > span { color: var(--muted); font-size: 8px; font-weight: 850; letter-spacing: .11em; text-transform: uppercase; }
+.owner-workshop-form .schedule-times input { width: 100%; min-height: 38px; padding: 0 10px; background: white; }
+.schedule-times i { padding-bottom: 11px; color: var(--muted); font-style: normal; }
+.schedule-closed-label { color: var(--muted); font-size: 11px; font-weight: 800; }
+.schedule-note { display: flex; align-items: center; gap: 7px; margin-top: 10px; }
+.schedule-note svg { flex: 0 0 auto; color: var(--primary); }
+.owner-save-error { margin: 16px 24px 0; }
+.owner-workshop-form > .owner-form-actions { margin: 0; padding: 20px 24px 24px; border-top: 1px solid var(--ink); }
+
+@media (max-width: 640px) {
+  .owner-form-section { padding: 18px 16px; }
+  .owner-form-section-heading { grid-template-columns: 30px minmax(0, 1fr); gap: 10px; }
+  .owner-form-section-heading > span { width: 30px; height: 30px; }
+  .schedule-heading { grid-template-columns: 30px minmax(0, 1fr); }
+  .schedule-copy-btn { grid-column: 1 / -1; width: 100%; margin-top: 2px; }
+  .schedule-row { grid-template-columns: 1fr; gap: 8px; padding: 12px; }
+  .schedule-times { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+  .owner-save-error { margin: 14px 16px 0; }
+  .owner-workshop-form > .owner-form-actions { padding: 16px; }
+}
+.auto-location-note a { color: var(--primary); font-weight: 800; text-underline-offset: 2px; }
+
+/* =========================================================
+   TEMUBENGKEL V19 — owner precise location picker
+   Address finds the area; owner positions the exact map point.
+   ========================================================= */
+.owner-address-field textarea { margin-bottom: 0; }
+.owner-address-actions { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; margin-top: 10px; }
+.owner-workshop-form .owner-find-address-btn { display: inline-flex; min-height: 42px; align-items: center; justify-content: center; gap: 7px; margin-top: 0; padding: 0 16px; white-space: nowrap; }
+.owner-address-actions > p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.owner-location-inline-error { margin: 9px 0 0; color: #a92c22; font-size: 10px; font-weight: 750; line-height: 1.5; }
+.owner-location-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; margin: 21px 0 10px; padding-top: 18px; border-top: 1px solid var(--border); }
+.owner-location-heading > div { display: flex; align-items: center; gap: 8px; }
+.owner-location-heading svg { color: var(--primary); }
+.owner-location-heading strong { font-size: 12px; }
+.owner-location-heading > span { color: var(--muted); font-size: 9px; font-weight: 700; }
+.owner-location-empty { display: flex; min-height: 132px; align-items: center; justify-content: center; gap: 12px; border: 1px dashed #aaa59a; border-radius: var(--radius-sm); padding: 20px; background: #f5f3ed; text-align: left; }
+.owner-location-empty > svg { flex: 0 0 auto; color: var(--primary); }
+.owner-location-empty strong { display: block; font-size: 12px; }
+.owner-location-empty p { max-width: 520px; margin: 4px 0 0; color: var(--muted); font-size: 10px; line-height: 1.55; }
+.owner-location-map-shell { position: relative; height: 340px; overflow: hidden; border: 1px solid var(--ink); border-radius: var(--radius-sm); background: #e9edf0; box-shadow: 3px 3px 0 rgb(23 28 37 / 8%); }
+.owner-location-map { width: 100%; height: 100%; }
+.owner-location-center-pin { position: absolute; z-index: 500; left: 50%; top: 50%; display: grid; width: 44px; height: 54px; place-items: start center; pointer-events: none; transform: translate(-50%, -100%); filter: drop-shadow(0 3px 2px rgb(23 28 37 / 25%)); }
+.owner-location-center-pin > span { display: grid; width: 42px; height: 42px; place-items: center; border: 3px solid white; border-radius: 50% 50% 50% 8px; background: var(--primary); color: white; transform: rotate(-45deg); box-shadow: 0 0 0 1px rgb(23 28 37 / 20%); }
+.owner-location-center-pin svg { transform: rotate(45deg); }
+.owner-location-crosshair { position: absolute; z-index: 499; left: 50%; top: 50%; width: 8px; height: 8px; pointer-events: none; border: 2px solid white; border-radius: 50%; background: var(--ink); transform: translate(-50%, -50%); box-shadow: 0 0 0 1px rgb(23 28 37 / 25%); }
+.owner-location-status { display: flex; align-items: flex-start; gap: 9px; margin-top: 10px; padding: 11px 12px; border: 1px solid #9bcab5; border-radius: var(--radius-sm); background: #f0faf5; }
+.owner-location-status > svg { flex: 0 0 auto; margin-top: 1px; color: #08794e; }
+.owner-location-status strong { display: block; color: #075b3d; font-size: 10px; }
+.owner-location-status span { display: block; margin-top: 2px; color: var(--muted); font-size: 9px; line-height: 1.45; }
+.owner-location-error { margin: 9px 0 0; padding: 10px 12px; border: 1px solid #e3aaa4; border-radius: var(--radius-sm); background: #fff2f0; color: #a92c22; font-size: 10px; font-weight: 750; }
+.owner-location-map .leaflet-control-attribution { font-size: 9px; }
+.owner-location-map .leaflet-control-zoom a { color: var(--foreground); }
+
+@media (max-width: 720px) {
+  .owner-address-actions { grid-template-columns: 1fr; gap: 7px; }
+  .owner-workshop-form .owner-find-address-btn { width: 100%; }
+  .owner-location-heading { display: grid; align-items: start; gap: 5px; }
+  .owner-location-map-shell { height: 300px; }
+  .owner-location-empty { min-height: 116px; justify-content: flex-start; padding: 16px; }
+}
+
+/* ========================================================================== */
+/* TEMUBENGKEL V20 — easier owner location search + always-on map picker      */
+/* ========================================================================== */
+.owner-address-actions-v20 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.owner-find-current-btn {
+  min-height: 42px;
+}
+.owner-address-helper {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.55;
+}
+.owner-location-inline-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 10px 0 0;
+  color: #225f9a;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+.owner-location-inline-hint svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+.owner-location-inline-soft-error {
+  border-left: 3px solid #d68127;
+  padding-left: 8px;
+  color: #9a4819;
+}
+.owner-location-map-shell {
+  min-height: 340px;
+  background: linear-gradient(180deg, #e8edf2 0%, #dfe5eb 100%);
+}
+.owner-location-center-pin {
+  width: 40px;
+  height: 58px;
+  filter: drop-shadow(0 5px 6px rgb(23 28 37 / 24%));
+}
+.owner-location-center-pin > span {
+  position: relative;
+  display: block;
+  width: 40px;
+  height: 54px;
+  background: transparent;
+  border: 0;
+  transform: none;
+  box-shadow: none;
+}
+.owner-location-center-pin > span::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgb(23 28 37 / 20%);
+  transform: translateX(-50%);
+  filter: blur(1px);
+}
+.owner-location-center-pin-outer {
+  position: absolute;
+  inset: 0 auto auto 0;
+  display: block;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px 999px 999px 6px;
+  background: var(--primary);
+  transform: rotate(-45deg);
+  box-shadow: 0 0 0 3px #fff, 0 0 0 4px rgb(23 28 37 / 14%);
+}
+.owner-location-center-pin-inner {
+  position: absolute;
+  left: 50%;
+  top: 10px;
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: #fff;
+  transform: translateX(-50%);
+  box-shadow: inset 0 0 0 4px #6fa2ff;
+}
+.owner-location-crosshair {
+  width: 10px;
+  height: 10px;
+  border: 2px solid white;
+  background: #122032;
+  box-shadow: 0 0 0 2px rgb(23 28 37 / 10%);
+}
+.owner-location-status-neutral {
+  border-color: #cbd8e7;
+  background: #f5f8fc;
+}
+.owner-location-status-neutral > svg {
+  color: #1d5fa4;
+}
+.owner-location-status-neutral strong {
+  color: #184872;
+}
+@media (max-width: 720px) {
+  .owner-address-actions-v20 {
+    align-items: stretch;
+  }
+  .owner-address-actions-v20 > button {
+    width: 100%;
+    justify-content: center;
+  }
+  .owner-location-map-shell {
+    min-height: 300px;
+  }
+}
+
+/* ========================================================================== */
+/* TEMUBENGKEL V21 — owner map uses same Google Maps engine as Search         */
+/* ========================================================================== */
+.owner-location-map-shell-google {
+  height: 380px;
+  min-height: 380px;
+  overflow: hidden;
+  border: 1px solid var(--ink);
+  border-radius: 10px;
+  background: #eef3f7;
+  box-shadow: 4px 4px 0 rgb(18 23 34 / 8%);
+}
+.owner-location-map-google {
+  width: 100%;
+  height: 100%;
+  min-height: 380px;
+}
+.owner-location-center-pin-v21 {
+  position: absolute;
+  z-index: 10;
+  left: 50%;
+  top: 50%;
+  width: 42px;
+  height: 56px;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+  filter: drop-shadow(0 5px 5px rgb(15 30 55 / 24%));
+}
+.owner-location-center-pin-v21 > span {
+  position: relative;
+  display: block;
+  width: 42px;
+  height: 56px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+.owner-pin-v21::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 3px;
+  width: 38px;
+  height: 38px;
+  border: 3px solid #fff;
+  border-radius: 50% 50% 50% 7px;
+  background: #2d73e8;
+  transform: translateX(-50%) rotate(-45deg);
+  box-shadow: 0 0 0 1px rgb(20 38 68 / 20%);
+}
+.owner-pin-v21-ring {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 13px;
+  width: 16px;
+  height: 16px;
+  border: 3px solid #fff;
+  border-radius: 999px;
+  transform: translateX(-50%);
+}
+.owner-pin-v21-dot {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 19px;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: #fff;
+  transform: translateX(-50%);
+}
+.owner-location-center-pin-v21::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 12px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgb(18 23 34 / 20%);
+  transform: translateX(-50%);
+  filter: blur(1px);
+}
+.owner-location-picker-google .owner-location-crosshair,
+.owner-location-picker-google .owner-location-center-pin-outer,
+.owner-location-picker-google .owner-location-center-pin-inner {
+  display: none !important;
+}
+.owner-location-picker-google .owner-location-status {
+  margin-top: 12px;
+}
+.owner-address-actions-v20 .primary-btn,
+.owner-address-actions-v20 .secondary-btn {
+  min-height: 44px;
+  border-radius: 7px;
+}
+@media (max-width: 720px) {
+  .owner-location-map-shell-google,
+  .owner-location-map-google {
+    height: 330px;
+    min-height: 330px;
+  }
+  .owner-location-center-pin-v21 {
+    transform: translate(-50%, -100%) scale(.92);
+    transform-origin: bottom center;
+  }
+}
+
+/* ========================================================================== */
+/* TEMUBENGKEL V23 — persistent current-user location pin                     */
+/* ========================================================================== */
+.tb-user-location-marker {
+  position: relative;
+  width: 38px;
+  height: 46px;
+  pointer-events: none;
+  transform: translateY(-1px);
+}
+.tb-user-location-pin {
+  display: block;
+  width: 38px;
+  height: 46px;
+  color: #2563eb;
+  filter: drop-shadow(0 3px 4px rgb(15 23 42 / 28%));
+}
+.tb-user-location-pin svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+@media (max-width: 720px) {
+  .tb-user-location-marker,
+  .tb-user-location-pin {
+    width: 34px;
+    height: 42px;
+  }
+}
+
+/* ==========================================================================
+   TEMUBENGKEL V24 — clear owner/user mode navigation
+   ========================================================================== */
+.owner-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.owner-console-label {
+  color: var(--muted);
+  font: 800 9px/1 ui-monospace, monospace;
+  letter-spacing: .15em;
+}
+.owner-user-return,
+.owner-auth-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  border: 1px solid #c7cbd1;
+  border-radius: 4px;
+  padding: 0 10px;
+  background: #fffefb;
+  color: #202630;
+  font-size: 10px;
+  font-weight: 800;
+  transition: border-color .16s ease, transform .16s ease, background .16s ease;
+}
+.owner-user-return:hover,
+.owner-auth-back:hover {
+  border-color: #202630;
+  background: white;
+  transform: translateY(-1px);
+}
+.owner-auth-brand-row {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.owner-auth-back {
+  border-color: #535c6a;
+  background: rgb(255 255 255 / 4%);
+  color: #eef2f8;
+}
+.owner-auth-back:hover {
+  border-color: #8aaeff;
+  background: rgb(36 105 232 / 14%);
+}
+.owner-logout-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+@media (max-width: 760px) {
+  .owner-topbar-actions { gap: 7px; }
+  .owner-console-label { display: none; }
+  .owner-user-return { min-height: 34px; padding: 0 9px; font-size: 9px; }
+  .owner-auth-brand-row { align-items: flex-start; }
+  .owner-auth-back { min-height: 32px; padding: 0 9px; font-size: 9px; }
+}
+
+@media (max-width: 390px) {
+  .owner-user-return span { max-width: 76px; line-height: 1.15; text-align: center; }
+  .owner-auth-back span { max-width: 66px; line-height: 1.15; text-align: center; }
+}

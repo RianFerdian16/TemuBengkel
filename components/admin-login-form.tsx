@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { FormEvent, useState } from "react"
 import { useRouter } from "next/navigation"
 
@@ -35,7 +36,7 @@ export function AdminLoginForm() {
     <form className="surface owner-form admin-login-form" onSubmit={submit}>
       <label htmlFor="admin-email">Email admin</label>
       <input id="admin-email" type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} required />
-      <label htmlFor="admin-password">Kata sandi</label>
+      <div className="auth-label-row"><label htmlFor="admin-password">Kata sandi</label><Link href="/owner/forgot-password">Lupa kata sandi?</Link></div>
       <input id="admin-password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
       {error && <p className="form-note error-note" role="alert">{error}</p>}
       <button className="primary-btn" type="submit" disabled={busy}>{busy ? "Memverifikasi…" : "Masuk sebagai Admin"}</button>

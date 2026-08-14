@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { HomeSearchEntry } from "@/components/home-search-entry"
 import {
   ArrowRight,
   Clock3,
@@ -45,10 +46,9 @@ export function HomeExperience({ showAdminLink = false }: { showAdminLink?: bool
               lalu membuka arah perjalanan tanpa alur yang ribet.
             </p>
 
-            <div className="landing-actions">
-              <Link className="landing-primary" href="/search">
-                Cari bengkel sekarang <ArrowRight size={17} />
-              </Link>
+            <HomeSearchEntry />
+
+            <div className="landing-actions landing-actions-secondary">
               <Link className="landing-secondary" href="/owner/login">
                 <Wrench size={16} /> Portal pemilik bengkel
               </Link>
