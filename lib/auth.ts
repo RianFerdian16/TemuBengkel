@@ -7,8 +7,6 @@ const OWNER_SESSION_COOKIE = "tb_session"
 const ADMIN_SESSION_COOKIE = "tb_admin_session"
 const OWNER_SESSION_TTL_SECONDS = 60 * 60 * 24 * 30
 const ADMIN_SESSION_TTL_SECONDS = 60 * 60 * 24 * 7
-const EMAIL_VERIFY_TTL_MS = 24 * 60 * 60 * 1000
-const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000
 const SCRYPT_KEY_LENGTH = 64
 const scryptAsync = promisify(scrypt)
 
@@ -17,7 +15,6 @@ type SafeUser = {
   fullName: string
   email: string
   role: "customer" | "owner" | "admin"
-  emailVerified: boolean
 }
 
 function normalizeRole(role: unknown): SafeUser["role"] {
@@ -27,13 +24,12 @@ function normalizeRole(role: unknown): SafeUser["role"] {
   return "owner"
 }
 
-function toSafeUser(user: { id: string; fullName: string; email: string; role: unknown; emailVerifiedAt?: Date | null }): SafeUser {
+function toSafeUser(user: { id: string; fullName: string; email: string; role: unknown }): SafeUser {
   return {
     id: user.id,
     fullName: user.fullName,
     email: user.email,
     role: normalizeRole(user.role),
-    emailVerified: Boolean(user.emailVerifiedAt),
   }
 }
 
@@ -81,16 +77,6 @@ async function createSession(userId: string, kind: "owner" | "admin") {
   else store.set(OWNER_SESSION_COOKIE, token, sessionCookieOptions(ttl))
 }
 
-async function createAuthToken(userId: string, type: "EMAIL_VERIFY" | "PASSWORD_RESET", ttlMs: number) {
-  const prisma = getPrisma() as any
-  const rawToken = randomBytes(32).toString("base64url")
-  await prisma.authToken.deleteMany({ where: { OR: [{ userId, type }, { expiresAt: { lt: new Date() } }] } })
-  await prisma.authToken.create({
-    data: { tokenHash: hashToken(rawToken), userId, type, expiresAt: new Date(Date.now() + ttlMs) },
-  })
-  return rawToken
-}
-
 async function readSession(cookieName: string, expectedRole: "owner" | "admin") {
   const store = await cookies()
   const token = store.get(cookieName)?.value
@@ -100,11 +86,10 @@ async function readSession(cookieName: string, expectedRole: "owner" | "admin") 
   if (!session || session.expiresAt.getTime() <= Date.now() || session.user.deletedAt) return null
   const safeUser = toSafeUser(session.user)
   if (safeUser.role !== expectedRole) return null
-  if (expectedRole === "owner" && !safeUser.emailVerified) return null
   return { user: safeUser, sessionId: session.id }
 }
 
-export async function registerOwner(email: string, password: string, fullName: string, requireEmailVerification = true) {
+export async function registerOwner(email: string, password: string, fullName: string) {
   const prisma = getPrisma() as any
   const passwordHash = await hashPassword(password)
   const user = await prisma.user.create({
@@ -113,58 +98,13 @@ export async function registerOwner(email: string, password: string, fullName: s
       fullName,
       passwordHash,
       role: "OWNER",
-      emailVerifiedAt: requireEmailVerification ? null : new Date(),
+      // Kept populated for backwards compatibility with the V30 schema.
+      // V31 does not require email verification.
+      emailVerifiedAt: new Date(),
     },
   })
-  if (!requireEmailVerification) {
-    await createSession(user.id, "owner")
-    return { user: toSafeUser(user), verificationToken: null, signedIn: true }
-  }
-  const verificationToken = await createAuthToken(user.id, "EMAIL_VERIFY", EMAIL_VERIFY_TTL_MS)
-  return { user: toSafeUser(user), verificationToken, signedIn: false }
-}
-
-export async function issueEmailVerificationToken(email: string) {
-  const prisma = getPrisma() as any
-  const user = await prisma.user.findUnique({ where: { email } })
-  if (!user || user.deletedAt || normalizeRole(user.role) !== "owner" || user.emailVerifiedAt) return null
-  return { user: toSafeUser(user), token: await createAuthToken(user.id, "EMAIL_VERIFY", EMAIL_VERIFY_TTL_MS) }
-}
-
-export async function verifyEmailToken(token: string) {
-  const prisma = getPrisma() as any
-  const row = await prisma.authToken.findUnique({ where: { tokenHash: hashToken(token) }, include: { user: true } })
-  if (!row || String(row.type) !== "EMAIL_VERIFY" || row.expiresAt.getTime() <= Date.now() || row.user.deletedAt) {
-    throw new Error("Tautan verifikasi tidak valid atau sudah kedaluwarsa.")
-  }
-  await prisma.$transaction([
-    prisma.user.update({ where: { id: row.userId }, data: { emailVerifiedAt: new Date() } }),
-    prisma.authToken.deleteMany({ where: { userId: row.userId, type: "EMAIL_VERIFY" } }),
-  ])
-  return true
-}
-
-export async function issuePasswordResetToken(email: string) {
-  const prisma = getPrisma() as any
-  const user = await prisma.user.findUnique({ where: { email } })
-  const role = user ? normalizeRole(user.role) : "customer"
-  if (!user || user.deletedAt || (role !== "owner" && role !== "admin")) return null
-  return { user: toSafeUser(user), token: await createAuthToken(user.id, "PASSWORD_RESET", PASSWORD_RESET_TTL_MS) }
-}
-
-export async function resetPasswordWithToken(token: string, password: string) {
-  const prisma = getPrisma() as any
-  const row = await prisma.authToken.findUnique({ where: { tokenHash: hashToken(token) }, include: { user: true } })
-  if (!row || String(row.type) !== "PASSWORD_RESET" || row.expiresAt.getTime() <= Date.now() || row.user.deletedAt) {
-    throw new Error("Tautan reset kata sandi tidak valid atau sudah kedaluwarsa.")
-  }
-  const passwordHash = await hashPassword(password)
-  await prisma.$transaction([
-    prisma.user.update({ where: { id: row.userId }, data: { passwordHash } }),
-    prisma.session.deleteMany({ where: { userId: row.userId } }),
-    prisma.authToken.deleteMany({ where: { userId: row.userId } }),
-  ])
-  return normalizeRole(row.user.role)
+  await createSession(user.id, "owner")
+  return toSafeUser(user)
 }
 
 export async function signInWithPassword(email: string, password: string) {
@@ -173,7 +113,10 @@ export async function signInWithPassword(email: string, password: string) {
   if (!user || user.deletedAt || normalizeRole(user.role) !== "owner" || !(await verifyPassword(password, user.passwordHash))) {
     throw new Error("Email atau kata sandi salah.")
   }
-  if (!user.emailVerifiedAt) throw new Error("Verifikasi email terlebih dahulu sebelum masuk.")
+  // Accounts created during the short-lived V30 verification flow must not be locked out.
+  if (!user.emailVerifiedAt) {
+    await prisma.user.update({ where: { id: user.id }, data: { emailVerifiedAt: new Date() } }).catch(() => null)
+  }
   await createSession(user.id, "owner")
   return toSafeUser(user)
 }

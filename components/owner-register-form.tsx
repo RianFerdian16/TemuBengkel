@@ -10,11 +10,10 @@ export function OwnerRegisterForm() {
   const [password, setPassword] = useState("")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [message, setMessage] = useState<string | null>(null)
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
-    setBusy(true); setError(null); setMessage(null)
+    setBusy(true); setError(null)
     try {
       const response = await fetch("/api/auth/register", {
         method: "POST",
@@ -23,12 +22,8 @@ export function OwnerRegisterForm() {
       })
       const payload = await response.json().catch(() => ({}))
       if (!response.ok) throw new Error(payload?.error || "Pendaftaran gagal")
-      if (payload.signedIn) {
-        router.push("/owner/dashboard")
-        router.refresh()
-      } else {
-        setMessage(payload.message || "Akun dibuat. Periksa email untuk verifikasi.")
-      }
+      router.push("/owner/dashboard")
+      router.refresh()
     } catch (err) { setError(err instanceof Error ? err.message : "Pendaftaran gagal") }
     finally { setBusy(false) }
   }
@@ -41,9 +36,8 @@ export function OwnerRegisterForm() {
       <input id="owner-register-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
       <label htmlFor="owner-register-password">Kata sandi</label>
       <input id="owner-register-password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} maxLength={128} required />
-      <p className="form-note">Minimal 8 karakter. Gunakan email aktif agar pemulihan akun tetap tersedia.</p>
+      <p className="form-note">Minimal 8 karakter. Simpan kata sandi dengan aman karena pemulihan lewat email belum tersedia.</p>
       {error && <p className="form-note error-note" role="alert">{error}</p>}
-      {message && <p className="form-note success-note" role="status">{message}</p>}
       <button className="primary-btn" type="submit" disabled={busy}>{busy ? "Membuat akun…" : "Daftar sebagai pemilik"}</button>
     </form>
   )

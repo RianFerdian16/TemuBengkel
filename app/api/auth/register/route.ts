@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server"
 import { registerOwner } from "@/lib/auth"
 import { integrationStatus } from "@/lib/config"
 import { isPrismaUniqueConstraintError } from "@/lib/db"
-import { appBaseUrl, emailDeliveryConfigured, sendVerificationEmail } from "@/lib/email"
 import { enforceRateLimit, rateLimitResponse } from "@/lib/rate-limit"
 
 export async function POST(request: NextRequest) {
@@ -17,24 +16,8 @@ export async function POST(request: NextRequest) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 320) return NextResponse.json({ error: "Email tidak valid." }, { status: 400 })
     if (password.length < 8 || password.length > 128) return NextResponse.json({ error: "Kata sandi harus 8–128 karakter." }, { status: 400 })
 
-    const requireVerification = emailDeliveryConfigured()
-    const result = await registerOwner(email, password, fullName, requireVerification)
-    let emailSent = false
-    if (requireVerification && result.verificationToken) {
-      const url = `${appBaseUrl(request.nextUrl.origin)}/api/auth/verify-email?token=${encodeURIComponent(result.verificationToken)}`
-      emailSent = await sendVerificationEmail(email, url).catch(() => false)
-    }
-    return NextResponse.json({
-      user: result.user,
-      signedIn: result.signedIn,
-      verificationRequired: requireVerification,
-      emailSent,
-      message: requireVerification
-        ? emailSent
-          ? "Akun dibuat. Periksa email untuk verifikasi sebelum masuk."
-          : "Akun dibuat, tetapi email verifikasi belum terkirim. Gunakan kirim ulang verifikasi dari halaman login."
-        : "Akun berhasil dibuat.",
-    }, { status: 201 })
+    const user = await registerOwner(email, password, fullName)
+    return NextResponse.json({ user, signedIn: true, message: "Akun berhasil dibuat." }, { status: 201 })
   } catch (error) {
     const limited = rateLimitResponse(error)
     if (limited) return NextResponse.json(limited.body, { status: limited.status, headers: limited.headers })
