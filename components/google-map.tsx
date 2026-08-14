@@ -27,7 +27,7 @@ export function loadGoogleMaps() {
     script.dataset.temubengkelGoogleMaps = "true"
     script.async = true
     script.defer = true
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&v=weekly&libraries=marker,places`
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&v=weekly&libraries=marker`
     script.onload = () => resolve((window as MapsWindow).google)
     script.onerror = () => reject(new Error("Google Maps gagal dimuat"))
     document.head.appendChild(script)
@@ -42,6 +42,7 @@ export function GoogleMap({
   fitUserLocation = true,
   selectedId,
   onSelect,
+  recenterKey = 0,
   className = "map-canvas",
 }: {
   workshops: Workshop[]
@@ -49,11 +50,13 @@ export function GoogleMap({
   fitUserLocation?: boolean
   selectedId?: string
   onSelect?: (id: string) => void
+  recenterKey?: number
   className?: string
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<any>(null)
   const markersRef = useRef<any[]>([])
+  const lastFitSignatureRef = useRef("")
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -73,6 +76,7 @@ export function GoogleMap({
           streetViewControl: false,
           fullscreenControl: false,
           clickableIcons: false,
+          gestureHandling: "greedy",
         })
         const observer = new ResizeObserver(() => {
           if (mapRef.current) google.maps.event.trigger(mapRef.current, "resize")
@@ -89,6 +93,12 @@ export function GoogleMap({
       observer?.disconnect()
     }
   }, [])
+
+  useEffect(() => {
+    if (!recenterKey || !userLocation || !mapRef.current) return
+    mapRef.current.panTo({ lat: userLocation.latitude, lng: userLocation.longitude })
+    mapRef.current.setZoom(15)
+  }, [recenterKey, userLocation?.latitude, userLocation?.longitude])
 
   useEffect(() => {
     let cancelled = false
@@ -127,9 +137,7 @@ export function GoogleMap({
           zIndex: 1000,
         })
         markersRef.current.push(marker)
-        if (fitUserLocation) {
-          bounds.extend({ lat: userLocation.latitude, lng: userLocation.longitude })
-        }
+        if (fitUserLocation) bounds.extend({ lat: userLocation.latitude, lng: userLocation.longitude })
       }
 
       workshops.forEach((workshop) => {
@@ -150,7 +158,15 @@ export function GoogleMap({
         bounds.extend({ lat: workshop.latitude, lng: workshop.longitude })
       })
 
-      if (!bounds.isEmpty()) {
+      // Only refit when the result set/location context changes. Selecting a marker
+      // should not yank the user's viewport back to the full result bounds.
+      const fitSignature = [
+        fitUserLocation && userLocation ? `${userLocation.latitude.toFixed(5)},${userLocation.longitude.toFixed(5)}` : "",
+        ...workshops.map((item) => `${item.id}:${item.latitude ?? ""}:${item.longitude ?? ""}`),
+      ].join("|")
+
+      if (!bounds.isEmpty() && fitSignature !== lastFitSignatureRef.current) {
+        lastFitSignatureRef.current = fitSignature
         map.fitBounds(bounds, 64)
         google.maps.event.addListenerOnce(map, "idle", () => {
           if (map.getZoom() > 16) map.setZoom(16)

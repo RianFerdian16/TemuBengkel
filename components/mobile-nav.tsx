@@ -9,7 +9,7 @@ export function MobileNav() {
   const items = [
     { href: "/", label: "Beranda", icon: Home, active: pathname === "/" },
     { href: "/search", label: "Cari", icon: Search, active: pathname.startsWith("/search") || pathname.startsWith("/bengkel/") },
-    { href: "/owner/login", label: "Bengkel", icon: Wrench, active: pathname.startsWith("/owner") },
+    { href: "/owner/login", label: "Pemilik", icon: Wrench, active: pathname.startsWith("/owner") },
   ]
 
   return (

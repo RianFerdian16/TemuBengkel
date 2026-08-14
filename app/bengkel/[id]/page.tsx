@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Clock3, MapPin, MessageCircle, Navigation, Phone, Star, Wrench } from "lucide-react"
+import { Clock3, MapPin, MessageCircle, Navigation, Phone, ShieldCheck, Star, Wrench } from "lucide-react"
 import { GoogleMap } from "@/components/google-map"
 import { SiteHeader } from "@/components/site-header"
 import { getWorkshopDetail } from "@/lib/workshop-data"
@@ -33,6 +33,8 @@ export default async function WorkshopPage({ params }: { params: Promise<{ id: s
   const wa = whatsappUrl(workshop.whatsapp || workshop.phone)
   const phone = telUrl(workshop.phone)
   const hasRating = typeof workshop.rating === "number"
+  const hasGoogleSource = workshop.source === "google" || Boolean(workshop.googlePlaceId)
+  const hasOwnerSource = workshop.source === "owner" || Boolean(workshop.ownerListingId)
   const hasInfo = Boolean(workshop.description || workshop.services?.length)
   const hasHours = Boolean(workshop.openingHours?.length)
 
@@ -67,18 +69,26 @@ export default async function WorkshopPage({ params }: { params: Promise<{ id: s
               )}
             </div>
 
-            <div className="detail-rating-card-v15" aria-label="Rating Google Maps">
-              <span className="detail-rating-label-v15">Rating Google Maps</span>
-              <div className="detail-rating-number-v15">
-                <Star size={22} fill="currentColor" />
-                <strong>{hasRating ? workshop.rating!.toFixed(1) : "—"}</strong>
+            {hasGoogleSource ? (
+              <div className="detail-rating-card-v15" aria-label="Rating Google Maps">
+                <span className="detail-rating-label-v15">Rating Google Maps</span>
+                <div className="detail-rating-number-v15">
+                  <Star size={22} fill="currentColor" />
+                  <strong>{hasRating ? workshop.rating!.toFixed(1) : "—"}</strong>
+                </div>
+                <span className="detail-review-count-v15">
+                  {workshop.reviewCount
+                    ? `${workshop.reviewCount.toLocaleString("id-ID")} ulasan`
+                    : "Rating belum tersedia"}
+                </span>
               </div>
-              <span className="detail-review-count-v15">
-                {workshop.reviewCount
-                  ? `${workshop.reviewCount.toLocaleString("id-ID")} ulasan`
-                  : "Belum ada jumlah ulasan"}
-              </span>
-            </div>
+            ) : (
+              <div className="detail-rating-card-v15 detail-owner-source-card" aria-label="Listing TemuBengkel terverifikasi">
+                <span className="detail-rating-label-v15">Listing TemuBengkel</span>
+                <div className="detail-owner-source-mark"><ShieldCheck size={28} /><strong>Terverifikasi</strong></div>
+                <span className="detail-review-count-v15">Data bengkel telah melalui review admin sebelum tampil publik.</span>
+              </div>
+            )}
 
             <div className="action-row detail-contact-actions detail-contact-actions-v15" aria-label="Hubungi bengkel">
               {wa && (
@@ -153,8 +163,10 @@ export default async function WorkshopPage({ params }: { params: Promise<{ id: s
           )}
 
           <div className="places-attribution-block detail-source-v15">
-            <span>Sumber data publik: <strong translate="no">Google Maps</strong></span>
-            {workshop.attributions?.map((attribution, index) => (
+            <span>
+              Sumber data: <strong>{hasGoogleSource && hasOwnerSource ? "Google Maps + data pemilik terverifikasi" : hasGoogleSource ? "Google Maps" : "TemuBengkel"}</strong>
+            </span>
+            {hasGoogleSource && workshop.attributions?.map((attribution, index) => (
               attribution.providerUri
                 ? <a key={`${attribution.provider || "provider"}-${index}`} href={attribution.providerUri} target="_blank" rel="noreferrer">{attribution.provider || "Penyedia data"}</a>
                 : <span key={index}>{attribution.provider}</span>

@@ -201,7 +201,8 @@ export async function searchGoogleWorkshops(options: {
 }) {
   const service = options.query?.trim()
   const locationText = options.locationText?.trim()
-  let textQuery = service ? `${service} bengkel motor` : "bengkel motor"
+  const alreadyWorkshopQuery = Boolean(service && /\b(?:bengkel|workshop|garage|motor)\b/i.test(service))
+  let textQuery = service ? (alreadyWorkshopQuery ? service : `${service} bengkel motor`) : "bengkel motor"
   if (locationText && typeof options.latitude !== "number") textQuery += ` di ${locationText}`
 
   const body: Record<string, unknown> = {
@@ -233,11 +234,7 @@ export async function searchGoogleWorkshops(options: {
         "places.rating",
         "places.userRatingCount",
         "places.currentOpeningHours",
-        "places.regularOpeningHours",
-        "places.nationalPhoneNumber",
         "places.googleMapsUri",
-        "places.photos",
-        "places.attributions",
       ].join(","),
     },
     body: JSON.stringify(body),
@@ -274,8 +271,6 @@ async function fetchNewPlace(placeId: string) {
     "internationalPhoneNumber",
     "googleMapsUri",
     "websiteUri",
-    "photos",
-    "reviews",
     "attributions",
   ].join(",")
 
@@ -304,38 +299,10 @@ export async function getGoogleWorkshopDetail(placeId: string): Promise<Workshop
   const place = await fetchNewPlace(placeId)
   if (!place) return null
 
-  const base = mapGooglePlace(place)
-  let photos = normalizePhotos(place.photos)
-  let reviews = normalizeNewReviews(place.reviews)
-  let legacy: LegacyDetails | null = null
-
-  // Some listings expose rating/count through Places API (New) while omitting the
-  // UGC arrays. In that case, retry the same Place ID through Place Details (Legacy).
-  if (photos.length === 0 || reviews.length === 0) {
-    legacy = await fetchLegacyDetails(placeId).catch(() => null)
-    if (photos.length === 0) photos = legacyPhotos(legacy)
-    if (reviews.length === 0) reviews = legacyReviews(legacy)
-  }
-
-  return {
-    ...base,
-    rating:
-      typeof base.rating === "number"
-        ? base.rating
-        : typeof legacy?.rating === "number"
-          ? legacy.rating
-          : undefined,
-    reviewCount:
-      typeof base.reviewCount === "number"
-        ? base.reviewCount
-        : typeof legacy?.user_ratings_total === "number"
-          ? legacy.user_ratings_total
-          : undefined,
-    googleMapsUri: base.googleMapsUri || legacy?.url || undefined,
-    photoNames: photos.map((photo) => photo.name),
-    photos,
-    reviews,
-  }
+  // Detail page only requests fields that are actually rendered.
+  // Photos/reviews and the legacy fallback were intentionally removed to reduce
+  // latency, quota use, and duplicate Google Places requests.
+  return mapGooglePlace(place)
 }
 
 export async function fetchGooglePhoto(photoName: string, maxWidthPx = 1200) {

@@ -14,7 +14,7 @@ export default async function Page() {
       <footer className="landing-footer">
         <div className="landing-shell landing-footer-inner">
           <span>© 2026 TEMUBENGKEL</span>
-          <div><Link href="/privacy">Privasi</Link><Link href="/terms">Ketentuan</Link><a href="/admin" target="_blank" rel="noopener noreferrer">Admin Console ↗</a></div>
+          <div><Link href="/privacy">Privasi</Link><Link href="/terms">Ketentuan</Link>{adminSession && <a href="/admin" target="_blank" rel="noopener noreferrer">Admin Console ↗</a>}</div>
         </div>
       </footer>
     </div>

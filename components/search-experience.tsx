@@ -3,9 +3,7 @@
 import Link from "next/link"
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react"
 import {
-  Bike,
   CircleAlert,
-  Clock3,
   ExternalLink,
   List,
   LocateFixed,
@@ -32,25 +30,27 @@ type Props = {
 }
 
 type SearchErrorKind = "location" | "system" | null
+type SearchOrigin = { latitude: number; longitude: number; label?: string; source: "device" | "query" }
 
 const serviceOptions = ["Servis Ringan", "Ganti Oli", "Body Repair & Cat"]
-
-const SEARCH_SESSION_KEY = "temubengkel:search-session:v1"
-const SEARCH_SESSION_TTL_MS = 30 * 60 * 1000
+const SEARCH_SESSION_KEY = "temubengkel:search-session:v2"
+const SEARCH_RESULTS_TTL_MS = 3 * 60 * 1000
 
 type SearchSession = {
-  version: 1
+  version: 2
   savedAt: number
-  locationText: string
+  resultsFetchedAt: number
+  searchText: string
   userLocation?: { latitude: number; longitude: number }
+  searchOrigin?: SearchOrigin
   workshops: Workshop[]
   hasSearched: boolean
+  capped: boolean
   view: "list" | "map"
   selectedId?: string
   filters: {
     openOnly: boolean
     distanceKm: number
-    shopType: "all" | "official"
     services: string[]
     mechanicCallOnly: boolean
   }
@@ -62,24 +62,37 @@ function readSearchSession(): SearchSession | null {
     const raw = window.localStorage.getItem(SEARCH_SESSION_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw) as Partial<SearchSession>
-    if (parsed.version !== 1 || typeof parsed.savedAt !== "number") return null
+    if (parsed.version !== 2 || typeof parsed.savedAt !== "number") return null
+    const searchOrigin = parsed.searchOrigin
     return {
-      version: 1,
+      version: 2,
       savedAt: parsed.savedAt,
-      locationText: typeof parsed.locationText === "string" ? parsed.locationText : "",
+      resultsFetchedAt: typeof parsed.resultsFetchedAt === "number" ? parsed.resultsFetchedAt : 0,
+      searchText: typeof parsed.searchText === "string" ? parsed.searchText : "",
       userLocation:
         typeof parsed.userLocation?.latitude === "number" && typeof parsed.userLocation?.longitude === "number"
           ? { latitude: parsed.userLocation.latitude, longitude: parsed.userLocation.longitude }
           : undefined,
+      searchOrigin:
+        typeof searchOrigin?.latitude === "number" && typeof searchOrigin?.longitude === "number"
+          ? {
+              latitude: searchOrigin.latitude,
+              longitude: searchOrigin.longitude,
+              label: typeof searchOrigin.label === "string" ? searchOrigin.label : undefined,
+              source: searchOrigin.source === "device" ? "device" : "query",
+            }
+          : undefined,
       workshops: Array.isArray(parsed.workshops) ? parsed.workshops : [],
       hasSearched: Boolean(parsed.hasSearched),
+      capped: Boolean(parsed.capped),
       view: parsed.view === "list" ? "list" : "map",
       selectedId: typeof parsed.selectedId === "string" ? parsed.selectedId : undefined,
       filters: {
         openOnly: Boolean(parsed.filters?.openOnly),
         distanceKm: typeof parsed.filters?.distanceKm === "number" ? parsed.filters.distanceKm : 15,
-        shopType: parsed.filters?.shopType === "official" ? "official" : "all",
-        services: Array.isArray(parsed.filters?.services) ? parsed.filters.services.filter((item): item is string => typeof item === "string") : [],
+        services: Array.isArray(parsed.filters?.services)
+          ? parsed.filters.services.filter((item): item is string => typeof item === "string")
+          : [],
         mechanicCallOnly: Boolean(parsed.filters?.mechanicCallOnly),
       },
     }
@@ -89,54 +102,65 @@ function readSearchSession(): SearchSession | null {
 }
 
 export function SearchExperience({ initialQuery = "", initialLocation = "", initialLatitude, initialLongitude }: Props) {
-  const [query] = useState(initialQuery)
-  const [locationText, setLocationText] = useState(initialLocation)
+  const initialSearchText = initialQuery || initialLocation
+  const [searchText, setSearchText] = useState(initialSearchText)
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | undefined>(
     typeof initialLatitude === "number" && typeof initialLongitude === "number"
       ? { latitude: initialLatitude, longitude: initialLongitude }
+      : undefined,
+  )
+  const [searchOrigin, setSearchOrigin] = useState<SearchOrigin | undefined>(
+    typeof initialLatitude === "number" && typeof initialLongitude === "number"
+      ? { latitude: initialLatitude, longitude: initialLongitude, source: "device" }
       : undefined,
   )
   const [workshops, setWorkshops] = useState<Workshop[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [errorKind, setErrorKind] = useState<SearchErrorKind>(null)
+  const [warning, setWarning] = useState<string | null>(null)
   const [hasSearched, setHasSearched] = useState(false)
+  const [capped, setCapped] = useState(false)
+  const [resultsFetchedAt, setResultsFetchedAt] = useState(0)
   const [view, setView] = useState<"list" | "map">("map")
   const [selectedId, setSelectedId] = useState<string | undefined>()
   const [filterOpen, setFilterOpen] = useState(false)
   const [sessionHydrated, setSessionHydrated] = useState(false)
+  const [recenterKey, setRecenterKey] = useState(0)
 
   const [openOnly, setOpenOnly] = useState(false)
   const [distanceKm, setDistanceKm] = useState(15)
-  const [shopType, setShopType] = useState<"all" | "official">("all")
   const [services, setServices] = useState<string[]>([])
   const [mechanicCallOnly, setMechanicCallOnly] = useState(false)
 
   const runSearch = useCallback(async (override?: {
     location?: { latitude: number; longitude: number }
     forceText?: boolean
-    locationText?: string
+    searchText?: string
   }) => {
-    const activeLocation = override?.forceText ? undefined : (override?.location || userLocation)
-    const activeLocationText = override?.locationText ?? locationText
-    if (!activeLocation && !activeLocationText.trim() && !query.trim()) {
-      setError("Lokasi diperlukan untuk menemukan bengkel terdekat.")
+    const activeText = (override?.searchText ?? searchText).trim()
+    const activeLocation = override?.forceText
+      ? undefined
+      : override?.location || (!activeText ? userLocation : undefined)
+
+    if (!activeLocation && !activeText) {
+      setError("Masukkan nama bengkel, area, alamat, atau gunakan lokasi perangkat.")
       setErrorKind("location")
       return
     }
 
     const params = new URLSearchParams()
-    if (query.trim()) params.set("q", query.trim())
+    if (activeText) params.set("q", activeText)
     if (activeLocation) {
       params.set("lat", String(activeLocation.latitude))
       params.set("lng", String(activeLocation.longitude))
-    } else if (activeLocationText.trim()) {
-      params.set("location", activeLocationText.trim())
+      params.set("radius", "15000")
     }
 
     setLoading(true)
     setError(null)
     setErrorKind(null)
+    setWarning(null)
     try {
       const response = await fetch(`/api/places/search?${params.toString()}`, { cache: "no-store" })
       const payload = await response.json()
@@ -145,24 +169,48 @@ export function SearchExperience({ initialQuery = "", initialLocation = "", init
       setWorkshops(next)
       setSelectedId(next[0]?.id)
       setHasSearched(true)
+      setCapped(Boolean(payload.capped))
+      setWarning(typeof payload.warning === "string" ? payload.warning : null)
+      setSearchOrigin(
+        payload?.origin && Number.isFinite(Number(payload.origin.latitude)) && Number.isFinite(Number(payload.origin.longitude))
+          ? {
+              latitude: Number(payload.origin.latitude),
+              longitude: Number(payload.origin.longitude),
+              label: typeof payload.origin.label === "string" ? payload.origin.label : undefined,
+              source: payload.origin.source === "device" ? "device" : "query",
+            }
+          : activeLocation
+            ? { ...activeLocation, source: "device" }
+            : undefined,
+      )
+      setResultsFetchedAt(Date.now())
     } catch (err) {
       setWorkshops([])
       setHasSearched(true)
+      setCapped(false)
+      setSearchOrigin(activeLocation ? { ...activeLocation, source: "device" } : undefined)
       setError(err instanceof Error ? err.message : "Pencarian bengkel gagal")
       setErrorKind("system")
     } finally {
       setLoading(false)
     }
-  }, [locationText, query, userLocation])
+  }, [searchText, userLocation])
 
   useEffect(() => {
     const hasExplicitSearch = Boolean(
-      initialQuery || initialLocation || (typeof initialLatitude === "number" && typeof initialLongitude === "number"),
+      initialSearchText || (typeof initialLatitude === "number" && typeof initialLongitude === "number"),
     )
 
     if (hasExplicitSearch) {
       setSessionHydrated(true)
-      void runSearch()
+      void runSearch({
+        searchText: initialSearchText,
+        location:
+          typeof initialLatitude === "number" && typeof initialLongitude === "number"
+            ? { latitude: initialLatitude, longitude: initialLongitude }
+            : undefined,
+        forceText: Boolean(initialSearchText),
+      })
       return
     }
 
@@ -172,82 +220,107 @@ export function SearchExperience({ initialQuery = "", initialLocation = "", init
       return
     }
 
-    setLocationText(cached.locationText)
+    setSearchText(cached.searchText)
     setUserLocation(cached.userLocation)
+    setSearchOrigin(cached.searchOrigin)
     setWorkshops(cached.workshops)
     setHasSearched(cached.hasSearched)
+    setCapped(cached.capped)
     setView(cached.view)
     setSelectedId(cached.selectedId || cached.workshops[0]?.id)
     setOpenOnly(cached.filters.openOnly)
     setDistanceKm(cached.filters.distanceKm)
-    setShopType(cached.filters.shopType)
     setServices(cached.filters.services)
     setMechanicCallOnly(cached.filters.mechanicCallOnly)
+    setResultsFetchedAt(cached.resultsFetchedAt)
     setSessionHydrated(true)
 
-    // Hasil yang masih fresh ditampilkan langsung tanpa request ulang.
-    // Setelah 30 menit, posisi terakhir tetap dipakai agar user tidak perlu
-    // menekan tombol lokasi lagi, tetapi daftar bengkel di-refresh.
-    if (Date.now() - cached.savedAt > SEARCH_SESSION_TTL_MS && cached.hasSearched) {
-      if (cached.userLocation) {
-        void runSearch({ location: cached.userLocation })
-      } else if (cached.locationText.trim()) {
-        void runSearch({ forceText: true, locationText: cached.locationText })
+    // Keep location/filter state for convenience, but refresh operational/rating data
+    // after a short TTL so "Buka sekarang" does not stay stale for 30 minutes.
+    if (cached.hasSearched && Date.now() - cached.resultsFetchedAt > SEARCH_RESULTS_TTL_MS) {
+      if (cached.searchText.trim()) {
+        void runSearch({ forceText: true, searchText: cached.searchText })
+      } else if (cached.userLocation) {
+        void runSearch({ location: cached.userLocation, searchText: "" })
       }
     }
-    // Hydrate sekali saat halaman Cari pertama kali mount.
+    // Hydrate once on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
     if (!sessionHydrated || typeof window === "undefined") return
-    const meaningfulSession = Boolean(hasSearched || userLocation || locationText.trim())
+    const meaningfulSession = Boolean(hasSearched || userLocation || searchText.trim())
     if (!meaningfulSession) return
 
     const session: SearchSession = {
-      version: 1,
+      version: 2,
       savedAt: Date.now(),
-      locationText,
+      resultsFetchedAt,
+      searchText,
       userLocation,
+      searchOrigin,
       workshops,
       hasSearched,
+      capped,
       view,
       selectedId,
-      filters: { openOnly, distanceKm, shopType, services, mechanicCallOnly },
+      filters: { openOnly, distanceKm, services, mechanicCallOnly },
     }
 
     try {
       window.localStorage.setItem(SEARCH_SESSION_KEY, JSON.stringify(session))
     } catch {
-      // localStorage bisa unavailable pada private/locked-down browser.
+      // localStorage can be unavailable on private/locked-down browsers.
     }
   }, [
     sessionHydrated,
-    locationText,
+    resultsFetchedAt,
+    searchText,
     userLocation,
+    searchOrigin,
     workshops,
     hasSearched,
+    capped,
     view,
     selectedId,
     openOnly,
     distanceKm,
-    shopType,
     services,
     mechanicCallOnly,
   ])
 
+  const hasServiceCoverage = useMemo(() => workshops.some((item) => Boolean(item.services?.length)), [workshops])
+  const hasMechanicCoverage = useMemo(() => workshops.some((item) => item.mechanicCallAvailable === true), [workshops])
+  const hasGoogleResults = useMemo(() => workshops.some((item) => item.source === "google"), [workshops])
+  const hasOwnerResults = useMemo(() => workshops.some((item) => item.source === "owner" || Boolean(item.ownerListingId)), [workshops])
+  const sourceSummary = hasGoogleResults && hasOwnerResults
+    ? <>Data dari <b translate="no">Google Maps</b> + listing terverifikasi TemuBengkel</>
+    : hasGoogleResults
+      ? <>Data publik dari <b translate="no">Google Maps</b></>
+      : <>Listing terverifikasi TemuBengkel</>
+  const canUseDistanceFilter = Boolean(searchOrigin)
+
+  useEffect(() => {
+    if (!hasServiceCoverage && services.length) setServices([])
+    if (!hasMechanicCoverage && mechanicCallOnly) setMechanicCallOnly(false)
+  }, [hasServiceCoverage, hasMechanicCoverage, services.length, mechanicCallOnly])
+
   const submit = (event: FormEvent) => {
     event.preventDefault()
-    // Keep the device location even when the user searches another area.
-    // It remains available as a persistent "Posisi Anda" marker on the map.
-    void runSearch({ location: locationText.trim() ? undefined : userLocation, forceText: Boolean(locationText.trim()) })
+    const manual = Boolean(searchText.trim())
+    void runSearch({
+      location: manual ? undefined : userLocation,
+      forceText: manual,
+      searchText,
+    })
   }
 
   const locate = () => {
     setError(null)
     setErrorKind(null)
     if (!navigator.geolocation) {
-      setError("Browser ini tidak mendukung geolocation. Gunakan pencarian lokasi manual.")
+      setError("Browser ini tidak mendukung geolocation. Gunakan pencarian manual.")
       setErrorKind("location")
       return
     }
@@ -257,12 +330,12 @@ export function SearchExperience({ initialQuery = "", initialLocation = "", init
       ({ coords }) => {
         const nextLocation = { latitude: coords.latitude, longitude: coords.longitude }
         setUserLocation(nextLocation)
-        setLocationText("")
-        void runSearch({ location: nextLocation })
+        setSearchText("")
+        void runSearch({ location: nextLocation, searchText: "" })
       },
       () => {
         setLoading(false)
-        setError("Akses lokasi ditolak. Aktifkan izin lokasi atau masukkan area secara manual.")
+        setError("Akses lokasi ditolak. Aktifkan izin lokasi atau cari bengkel/area secara manual.")
         setErrorKind("location")
       },
       { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
@@ -272,9 +345,10 @@ export function SearchExperience({ initialQuery = "", initialLocation = "", init
   const visible = useMemo(() => {
     let next = workshops.filter((item) => {
       if (openOnly && item.isOpenNow !== true) return false
-      if (shopType === "official" && item.source !== "owner") return false
-      if (typeof item.distanceMeters === "number" && item.distanceMeters > distanceKm * 1000) return false
-      if (mechanicCallOnly && !item.mechanicCallAvailable) return false
+      if (canUseDistanceFilter && distanceKm < 15) {
+        if (typeof item.distanceMeters !== "number" || item.distanceMeters > distanceKm * 1000) return false
+      }
+      if (mechanicCallOnly && item.mechanicCallAvailable !== true) return false
       if (services.length) {
         const available = (item.services || []).map((service) => service.toLocaleLowerCase("id-ID"))
         const matches = services.some((service) => available.some((entry) => entry.includes(service.toLocaleLowerCase("id-ID"))))
@@ -285,15 +359,14 @@ export function SearchExperience({ initialQuery = "", initialLocation = "", init
 
     next = [...next].sort((a, b) => (a.distanceMeters ?? Number.MAX_VALUE) - (b.distanceMeters ?? Number.MAX_VALUE))
     return next
-  }, [workshops, openOnly, distanceKm, shopType, services, mechanicCallOnly])
+  }, [workshops, openOnly, canUseDistanceFilter, distanceKm, services, mechanicCallOnly])
 
   const selected = visible.find((item) => item.id === selectedId) || visible[0]
-  const hasActiveFilters = openOnly || distanceKm < 15 || shopType !== "all" || services.length > 0 || mechanicCallOnly
+  const hasActiveFilters = openOnly || (canUseDistanceFilter && distanceKm < 15) || services.length > 0 || mechanicCallOnly
 
   const resetFilters = () => {
     setOpenOnly(false)
     setDistanceKm(15)
-    setShopType("all")
     setServices([])
     setMechanicCallOnly(false)
   }
@@ -317,41 +390,51 @@ export function SearchExperience({ initialQuery = "", initialLocation = "", init
           <section className="filter-group">
             <h2>Status Operasional</h2>
             <button className={`filter-toggle-card ${openOnly ? "active" : ""}`} type="button" onClick={() => setOpenOnly((value) => !value)}>
-              <div><strong>Buka Sekarang</strong><span>Hanya tampilkan bengkel yang sedang beroperasi</span></div>
+              <div><strong>Buka Sekarang</strong><span>Hanya tampilkan bengkel yang terkonfirmasi sedang beroperasi</span></div>
               <span className="toggle-control" aria-hidden="true"><i /></span>
             </button>
           </section>
 
-          <section className="filter-group">
-            <div className="filter-group-title-row"><h2>Jarak Maksimum</h2><strong>{distanceKm} km</strong></div>
-            <input className="distance-range" type="range" min="1" max="15" step="1" value={distanceKm} onChange={(event) => setDistanceKm(Number(event.target.value))} />
+          <section className={`filter-group ${canUseDistanceFilter ? "" : "filter-group-disabled"}`}>
+            <div className="filter-group-title-row"><h2>Jarak Maksimum</h2><strong>{canUseDistanceFilter ? `${distanceKm} km` : "Butuh titik lokasi"}</strong></div>
+            <input
+              className="distance-range"
+              type="range"
+              min="1"
+              max="15"
+              step="1"
+              value={distanceKm}
+              disabled={!canUseDistanceFilter}
+              onChange={(event) => setDistanceKm(Number(event.target.value))}
+            />
             <div className="range-labels"><span>1 km</span><span>15 km</span></div>
+            {!canUseDistanceFilter && <p className="filter-data-note">Jarak aktif setelah lokasi perangkat dipakai atau query area/alamat berhasil dikenali.</p>}
           </section>
 
           <section className="filter-group">
-            <h2>Jenis Bengkel</h2>
-            <div className="segmented-filter">
-              <button className={shopType === "all" ? "active" : ""} type="button" onClick={() => setShopType("all")}><Bike size={17} /><span>Semua</span></button>
-              <button className={shopType === "official" ? "active" : ""} type="button" onClick={() => setShopType("official")}><Wrench size={17} /><span>Resmi</span></button>
-            </div>
+            <h2>Layanan Terverifikasi</h2>
+            {hasServiceCoverage ? (
+              <div className="service-filter-grid">
+                {serviceOptions.map((service) => {
+                  const active = services.includes(service)
+                  return <button key={service} className={active ? "active" : ""} type="button" onClick={() => toggleService(service)}><Wrench size={14} /><span>{service}</span><i /></button>
+                })}
+              </div>
+            ) : (
+              <p className="filter-data-note">Data layanan belum tersedia secara konsisten untuk hasil ini, jadi filter tidak ditampilkan agar tidak menyesatkan.</p>
+            )}
           </section>
 
           <section className="filter-group">
-            <h2>Layanan Tersedia</h2>
-            <div className="service-filter-grid">
-              {serviceOptions.map((service) => {
-                const active = services.includes(service)
-                return <button key={service} className={active ? "active" : ""} type="button" onClick={() => toggleService(service)}><Wrench size={14} /><span>{service}</span><i /></button>
-              })}
-            </div>
-          </section>
-
-          <section className="filter-group">
-            <button className={`mechanic-call-filter ${mechanicCallOnly ? "active" : ""}`} type="button" onClick={() => setMechanicCallOnly((value) => !value)}>
-              <span className="mechanic-call-icon"><PhoneCall size={16} /></span>
-              <span><strong>Montir Panggilan</strong><small>Layanan montir ke lokasi Anda</small></span>
-              <span className="toggle-control" aria-hidden="true"><i /></span>
-            </button>
+            {hasMechanicCoverage ? (
+              <button className={`mechanic-call-filter ${mechanicCallOnly ? "active" : ""}`} type="button" onClick={() => setMechanicCallOnly((value) => !value)}>
+                <span className="mechanic-call-icon"><PhoneCall size={16} /></span>
+                <span><strong>Montir Panggilan</strong><small>Hanya listing yang menyatakan layanan ini tersedia</small></span>
+                <span className="toggle-control" aria-hidden="true"><i /></span>
+              </button>
+            ) : (
+              <p className="filter-data-note">Belum ada listing pada hasil ini yang mengonfirmasi layanan montir panggilan.</p>
+            )}
           </section>
         </div>
 
@@ -368,16 +451,16 @@ export function SearchExperience({ initialQuery = "", initialLocation = "", init
       <StateScreen
         icon={<MapPin size={34} />}
         variant="location"
-        title="Lokasi Tidak Ditemukan"
-        description="Untuk menemukan bengkel terdekat, kami membutuhkan akses lokasi. Aktifkan di pengaturan perangkat, atau cari manual di bawah."
-        primaryLabel="Coba Lagi"
+        title="Tentukan pencarian"
+        description="Gunakan lokasi perangkat atau cari nama bengkel, area, jalan, maupun alamat secara manual."
+        primaryLabel="Gunakan Lokasi Saya"
         onPrimary={locate}
       >
         <div className="state-divider"><span>ATAU</span></div>
         <form className="state-manual-search" onSubmit={submit}>
           <Search size={15} />
-          <input value={locationText} onChange={(event) => setLocationText(event.target.value)} placeholder="Masukkan alamat atau kota..." />
-          <button type="submit" aria-label="Cari lokasi manual">›</button>
+          <input value={searchText} onChange={(event) => setSearchText(event.target.value)} placeholder="Cari bengkel, area, atau alamat..." />
+          <button type="submit" aria-label="Cari manual">›</button>
         </form>
       </StateScreen>
     )
@@ -388,8 +471,8 @@ export function SearchExperience({ initialQuery = "", initialLocation = "", init
       <StateScreen
         icon={<WifiOff size={32} />}
         variant="system"
-        title="Koneksi Terputus"
-        description="Kami tidak dapat memuat daftar bengkel saat ini. Silakan periksa koneksi internet Anda."
+        title="Pencarian belum dapat dimuat"
+        description={error || "Kami tidak dapat memuat daftar bengkel saat ini. Silakan coba kembali."}
         primaryLabel="Coba Lagi"
         onPrimary={() => void runSearch()}
       />
@@ -402,18 +485,18 @@ export function SearchExperience({ initialQuery = "", initialLocation = "", init
         icon={<MapPin size={33} />}
         variant="empty"
         title="Bengkel tidak ditemukan"
-        description="Maaf, kami tidak dapat menemukan bengkel yang sesuai dengan pencarian Anda di area ini."
-        primaryLabel="Cari Lokasi Lain"
+        description="Tidak ada bengkel yang cocok dengan pencarian dan filter saat ini."
+        primaryLabel="Cari Lagi"
         onPrimary={() => {
           setHasSearched(false)
-          setLocationText("")
+          setSearchText("")
           setView("map")
         }}
       >
         <div className="state-suggestion-box">
           <strong>Saran pencarian:</strong>
-          <span>• Coba hapus beberapa filter layanan untuk melihat lebih banyak hasil.</span>
-          <span>• Perluas radius pencarian Anda pada pengaturan jarak.</span>
+          <span>• Coba nama area yang lebih luas atau alamat yang lebih singkat.</span>
+          <span>• Hapus filter layanan/jarak jika hasil terlalu sempit.</span>
         </div>
         {hasActiveFilters && <button className="state-secondary-action" type="button" onClick={resetFilters}>Hapus Filter</button>}
       </StateScreen>
@@ -428,17 +511,17 @@ export function SearchExperience({ initialQuery = "", initialLocation = "", init
             <span className="search-pane-index">TB / SEARCH</span>
             <h1>Cari bengkel</h1>
           </div>
-          {hasSearched && <span className="search-result-count">{visible.length} hasil</span>}
+          {hasSearched && <span className="search-result-count">{visible.length} {capped ? "hasil teratas" : "hasil"}</span>}
         </div>
 
         <form className="mobile-search-toolbar" onSubmit={submit}>
           <div className="map-search-field">
             <Search size={16} aria-hidden="true" />
             <input
-              value={locationText}
-              onChange={(event) => setLocationText(event.target.value)}
-              placeholder={userLocation ? "Lokasi perangkat aktif" : "Cari kota, kecamatan, atau jalan..."}
-              aria-label="Lokasi pencarian"
+              value={searchText}
+              onChange={(event) => setSearchText(event.target.value)}
+              placeholder="Cari bengkel, area, atau alamat..."
+              aria-label="Cari bengkel, area, atau alamat"
             />
             <button
               className={`inline-filter-btn ${hasActiveFilters ? "active" : ""}`}
@@ -472,8 +555,8 @@ export function SearchExperience({ initialQuery = "", initialLocation = "", init
           <div className="search-guide-card">
             <span className="search-guide-number">01</span>
             <div>
-              <strong>Tentukan area pencarian</strong>
-              <p>Ketik lokasi pada kolom di atas atau gunakan lokasi perangkat. Hasil akan langsung muncul di peta.</p>
+              <strong>Cari dengan cara yang paling mudah</strong>
+              <p>Ketik nama bengkel, area, atau alamat. Anda juga bisa memakai lokasi perangkat untuk mencari yang terdekat.</p>
             </div>
           </div>
         )}
@@ -481,16 +564,21 @@ export function SearchExperience({ initialQuery = "", initialLocation = "", init
         {loading && (
           <div className="search-loading-row" role="status">
             <RotateCcw size={15} className="spin-icon" />
-            <span>Mencari bengkel di sekitar lokasi...</span>
+            <span>Mencari bengkel...</span>
           </div>
         )}
+
+        {warning && <div className="search-partial-warning" role="status"><CircleAlert size={14} />{warning}</div>}
 
         {hasSearched && visible.length > 0 && (
           <section className="mobile-result-list" aria-live="polite">
             <div className="mobile-result-summary">
               <div>
-                <strong>{visible.length} bengkel ditemukan</strong>
-                <span>Data publik dari <b translate="no">Google Maps</b> + listing terverifikasi TemuBengkel</span>
+                <strong>{visible.length} bengkel {capped ? "teratas " : ""}ditemukan</strong>
+                <span>{sourceSummary}</span>
+                {searchOrigin?.source === "query" && searchOrigin.label && (
+                  <small className="search-origin-note">Jarak dihitung dari area yang dikenali: {searchOrigin.label}</small>
+                )}
               </div>
               {hasActiveFilters && <button type="button" onClick={resetFilters}>Reset filter</button>}
             </div>
@@ -503,17 +591,25 @@ export function SearchExperience({ initialQuery = "", initialLocation = "", init
         <GoogleMap
           workshops={visible}
           userLocation={userLocation}
-          fitUserLocation={!locationText.trim()}
+          fitUserLocation={!searchText.trim()}
           selectedId={selected?.id}
           onSelect={setSelectedId}
+          recenterKey={recenterKey}
           className="mobile-search-map"
         />
+
+        {userLocation && (
+          <button className="map-recenter-user" type="button" onClick={() => setRecenterKey((value) => value + 1)} aria-label="Kembali ke posisi saya">
+            <LocateFixed size={17} />
+            <span>Posisi saya</span>
+          </button>
+        )}
 
         {!hasSearched && !loading && (
           <div className="map-idle-overlay">
             <span><MapPin size={22} /></span>
             <strong>Peta siap digunakan</strong>
-            <p>Cari area atau gunakan lokasi perangkat untuk menampilkan bengkel di sekitar Anda.</p>
+            <p>Cari bengkel/area atau gunakan lokasi perangkat untuk menampilkan hasil.</p>
           </div>
         )}
 
@@ -522,6 +618,12 @@ export function SearchExperience({ initialQuery = "", initialLocation = "", init
       </section>
     </div>
   )
+}
+
+function SourceBadge({ workshop }: { workshop: Workshop }) {
+  if (workshop.source === "owner") return <span className="workshop-source-badge owner">TemuBengkel</span>
+  if (workshop.ownerListingId) return <span className="workshop-source-badge linked">Google + pemilik</span>
+  return null
 }
 
 function MapWorkshopCard({ workshop }: { workshop: Workshop }) {
@@ -535,9 +637,10 @@ function MapWorkshopCard({ workshop }: { workshop: Workshop }) {
           {formatDistance(workshop.distanceMeters) && <b>{formatDistance(workshop.distanceMeters)}</b>}
         </div>
         <div className="map-card-meta">
-          <span><Star size={13} fill="currentColor" /> {typeof workshop.rating === "number" ? workshop.rating.toFixed(1) : "—"}</span>
+          {typeof workshop.rating === "number" && <span><Star size={13} fill="currentColor" /> {workshop.rating.toFixed(1)}</span>}
           {workshop.isOpenNow !== undefined && <span className={workshop.isOpenNow ? "open" : "closed"}>{workshop.isOpenNow ? "Buka" : "Tutup"}</span>}
           {workshop.mechanicCallAvailable && <span>Montir panggilan</span>}
+          <SourceBadge workshop={workshop} />
         </div>
         <div className="map-card-actions">
           <Link href={`/bengkel/${encodeURIComponent(workshop.id)}`}>Buka Detail</Link>
@@ -554,7 +657,11 @@ function ListWorkshopCard({ workshop }: { workshop: Workshop }) {
       <span className="mobile-list-copy">
         <span className="mobile-list-title"><strong>{workshop.name}</strong>{workshop.isOpenNow !== undefined && <i className={workshop.isOpenNow ? "open" : "closed"}>{workshop.isOpenNow ? "Buka" : "Tutup"}</i>}</span>
         <small>{workshop.address}</small>
-        <span className="mobile-list-meta"><b><Star size={12} fill="currentColor" />{typeof workshop.rating === "number" ? workshop.rating.toFixed(1) : "—"}</b>{formatDistance(workshop.distanceMeters) && <b>{formatDistance(workshop.distanceMeters)}</b>}</span>
+        <span className="mobile-list-meta">
+          {typeof workshop.rating === "number" && <b><Star size={12} fill="currentColor" />{workshop.rating.toFixed(1)}</b>}
+          {formatDistance(workshop.distanceMeters) && <b>{formatDistance(workshop.distanceMeters)}</b>}
+          <SourceBadge workshop={workshop} />
+        </span>
       </span>
       <ExternalLink size={15} className="mobile-list-arrow" />
     </Link>

@@ -1,10 +1,33 @@
 import { NextRequest, NextResponse } from "next/server"
-import { geocodeWorkshopAddress } from "@/lib/geocode"
+import { geocodeWorkshopAddress, reverseGeocodeCoordinates } from "@/lib/geocode"
+
+function finiteNumber(value: string | null) {
+  if (!value) return undefined
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
 
 export async function GET(request: NextRequest) {
-  const address = request.nextUrl.searchParams.get("address")?.trim() || ""
+  const latitude = finiteNumber(request.nextUrl.searchParams.get("lat"))
+  const longitude = finiteNumber(request.nextUrl.searchParams.get("lng"))
 
-  if (address.length < 5 || address.length > 1000) {
+  if (latitude !== undefined || longitude !== undefined) {
+    if (latitude === undefined || longitude === undefined) {
+      return NextResponse.json({ error: "Latitude dan longitude harus dikirim bersama." }, { status: 400 })
+    }
+    try {
+      const result = await reverseGeocodeCoordinates(latitude, longitude)
+      return NextResponse.json(result, { headers: { "Cache-Control": "no-store, max-age=0" } })
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Alamat dari titik peta tidak dapat ditemukan." },
+        { status: 404 },
+      )
+    }
+  }
+
+  const address = request.nextUrl.searchParams.get("address")?.trim() || ""
+  if (address.length < 3 || address.length > 1000) {
     return NextResponse.json({ error: "Tulis alamat bengkel terlebih dahulu." }, { status: 400 })
   }
 

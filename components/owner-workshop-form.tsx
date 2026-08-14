@@ -1,6 +1,6 @@
 "use client"
 
-import { FormEvent, useEffect, useState } from "react"
+import { FormEvent, useEffect, useRef, useState } from "react"
 import { CalendarDays, Clock3, LocateFixed, MapPinned, Navigation, Search } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { OwnerLocationPicker } from "@/components/owner-location-picker"
@@ -87,8 +87,11 @@ export function OwnerWorkshopForm({ workshopId }: { workshopId?: string }) {
   const [busy, setBusy] = useState(Boolean(workshopId))
   const [error, setError] = useState<string | null>(null)
   const [locationBusy, setLocationBusy] = useState(false)
+  const [reverseBusy, setReverseBusy] = useState(false)
   const [locationError, setLocationError] = useState<string | null>(null)
   const [locationHint, setLocationHint] = useState<string | null>(null)
+  const reverseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const reverseRequestRef = useRef(0)
 
   useEffect(() => {
     if (!workshopId) return
@@ -125,6 +128,8 @@ export function OwnerWorkshopForm({ workshopId }: { workshopId?: string }) {
   }
 
   const updateAddress = (address: string) => {
+    reverseRequestRef.current += 1
+    if (reverseTimerRef.current) clearTimeout(reverseTimerRef.current)
     setForm((current) => ({
       ...current,
       address,
@@ -142,6 +147,41 @@ export function OwnerWorkshopForm({ workshopId }: { workshopId?: string }) {
       googlePlaceId: "",
     }))
   }
+
+  const setLocationFromMap = (latitude: number, longitude: number) => {
+    setLocation(latitude, longitude)
+    setLocationError(null)
+    if (reverseTimerRef.current) clearTimeout(reverseTimerRef.current)
+    const requestId = ++reverseRequestRef.current
+    setLocationHint("Membaca alamat dari titik peta…")
+
+    reverseTimerRef.current = setTimeout(() => {
+      void (async () => {
+        setReverseBusy(true)
+        try {
+          const response = await fetch(`/api/geocode?lat=${encodeURIComponent(String(latitude))}&lng=${encodeURIComponent(String(longitude))}`, { cache: "no-store" })
+          const payload = await response.json().catch(() => ({}))
+          if (!response.ok) throw new Error(payload?.error || "Alamat dari titik peta belum dapat dibaca.")
+          if (requestId !== reverseRequestRef.current) return
+          const matchedAddress = typeof payload?.matchedAddress === "string" ? payload.matchedAddress.trim() : ""
+          if (matchedAddress) {
+            setForm((current) => ({ ...current, address: matchedAddress, googlePlaceId: "" }))
+            setLocationHint("Alamat otomatis disesuaikan dengan titik peta. Anda tetap bisa mengoreksi teks alamat bila perlu.")
+          }
+        } catch (err) {
+          if (requestId !== reverseRequestRef.current) return
+          setLocationHint("Titik peta sudah diperbarui. Alamat lama dipertahankan karena alamat otomatis belum ditemukan.")
+        } finally {
+          if (requestId === reverseRequestRef.current) setReverseBusy(false)
+        }
+      })()
+    }, 550)
+  }
+
+  useEffect(() => () => {
+    reverseRequestRef.current += 1
+    if (reverseTimerRef.current) clearTimeout(reverseTimerRef.current)
+  }, [])
 
   const searchAddress = async () => {
     const address = form.address.trim()
@@ -282,9 +322,9 @@ export function OwnerWorkshopForm({ workshopId }: { workshopId?: string }) {
 
         <div className="owner-location-heading">
           <div><LocateFixed size={18} aria-hidden="true" /><strong>Lokasi bengkel di peta</strong></div>
-          <span>Peta tetap aktif — geser saja pin ke titik yang paling akurat</span>
+          <span>{reverseBusy ? "Menyesuaikan alamat dari titik peta…" : "Geser pin — alamat akan ikut disesuaikan otomatis"}</span>
         </div>
-        <OwnerLocationPicker latitude={form.latitude} longitude={form.longitude} onChange={setLocation} />
+        <OwnerLocationPicker latitude={form.latitude} longitude={form.longitude} onChange={setLocationFromMap} />
       </section>
 
       <section className="owner-form-section">
