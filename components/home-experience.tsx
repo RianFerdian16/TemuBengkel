@@ -2,6 +2,7 @@ import Link from "next/link"
 import {
   ArrowRight,
   Clock3,
+  ExternalLink,
   MapPin,
   Navigation,
   Search,
@@ -31,7 +32,7 @@ const steps = [
   },
 ]
 
-export function HomeExperience() {
+export function HomeExperience({ showAdminLink = false }: { showAdminLink?: boolean }) {
   return (
     <div className="landing-home">
       <section className="landing-hero" aria-labelledby="landing-title">
@@ -51,6 +52,11 @@ export function HomeExperience() {
               <Link className="landing-secondary" href="/owner/login">
                 <Wrench size={16} /> Portal pemilik bengkel
               </Link>
+              {showAdminLink && (
+                <a className="landing-admin-link" href="/admin" target="_blank" rel="noopener noreferrer">
+                  <ExternalLink size={16} /> Admin Console
+                </a>
+              )}
             </div>
 
             <div className="landing-proof" aria-label="Informasi yang tersedia di TemuBengkel">

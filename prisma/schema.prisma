@@ -28,9 +28,11 @@ model User {
   role         UserRole  @default(OWNER)
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(3)
   sessions     Session[]
   workshops    Workshop[]
 
+  @@index([deletedAt])
   @@map("users")
 }
 
@@ -62,6 +64,9 @@ model Workshop {
   description           String?        @db.Text
   mechanicCallAvailable Boolean        @default(false) @map("mechanic_call_available")
   status                WorkshopStatus @default(PENDING)
+  rejectionReason       String?        @map("rejection_reason") @db.Text
+  reviewedAt            DateTime?      @map("reviewed_at") @db.Timestamptz(3)
+  reviewedById          String?        @map("reviewed_by_id") @db.Uuid
   createdAt             DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt             DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
   owner                 User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
@@ -69,5 +74,6 @@ model Workshop {
   @@index([ownerId])
   @@index([status])
   @@index([latitude, longitude])
+  @@index([reviewedById])
   @@map("workshops")
 }

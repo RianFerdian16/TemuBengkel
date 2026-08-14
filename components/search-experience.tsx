@@ -490,7 +490,7 @@ export function SearchExperience({ initialQuery = "", initialLocation = "", init
             <div className="mobile-result-summary">
               <div>
                 <strong>{visible.length} bengkel ditemukan</strong>
-                <span>Diurutkan dari yang terdekat · data publik dari <b translate="no">Google Maps</b></span>
+                <span>Data publik dari <b translate="no">Google Maps</b> + listing terverifikasi TemuBengkel</span>
               </div>
               {hasActiveFilters && <button type="button" onClick={resetFilters}>Reset filter</button>}
             </div>

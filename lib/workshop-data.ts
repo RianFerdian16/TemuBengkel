@@ -21,6 +21,33 @@ function enrichWithOwner<T extends Workshop>(google: T, owner?: Workshop | null)
   }
 }
 
+function normalizeSearchText(value: string | undefined) {
+  return (value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("id-ID")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+}
+
+function matchesOwnerText(item: Workshop, value: string | undefined) {
+  const needle = normalizeSearchText(value)
+  if (!needle) return true
+
+  const haystack = normalizeSearchText([
+    item.name,
+    item.address,
+    item.description,
+    ...(item.services || []),
+  ].filter(Boolean).join(" "))
+
+  // Exact phrase first, then token matching so searches like
+  // "Bengkel Suka Ria" and "Cikarang Selatan" remain forgiving.
+  if (haystack.includes(needle)) return true
+  const tokens = needle.split(/\s+/).filter((token) => token.length >= 2)
+  return tokens.length > 0 && tokens.every((token) => haystack.includes(token))
+}
+
 export async function searchWorkshops(options: {
   query?: string
   locationText?: string
@@ -35,8 +62,15 @@ export async function searchWorkshops(options: {
   }
 
   const googlePlaceIds = new Set(google.map((item) => item.googlePlaceId).filter(Boolean))
+  const hasCoordinates = typeof options.latitude === "number" && typeof options.longitude === "number"
+  const hasManualText = Boolean(options.locationText?.trim())
 
-  if (typeof options.latitude === "number" && typeof options.longitude === "number") {
+  // A service/name query should also apply to owner-created listings.
+  if (options.query?.trim()) {
+    owners = owners.filter((item) => matchesOwnerText(item, options.query))
+  }
+
+  if (hasCoordinates) {
     owners = owners
       .map((item) => {
         if (typeof item.latitude !== "number" || typeof item.longitude !== "number") return item
@@ -51,18 +85,35 @@ export async function searchWorkshops(options: {
       .filter((item) => {
         // Always retain a linked owner row when it enriches a Google result.
         if (item.googlePlaceId && googlePlaceIds.has(item.googlePlaceId)) return true
-        // Owner-only rows may be appended only when their coordinates are genuinely nearby.
+        // Owner-only rows may be appended when their approved coordinates are nearby.
         if (typeof item.distanceMeters !== "number") return false
         return item.distanceMeters <= (options.radiusMeters || 10_000)
       })
+  } else if (hasManualText) {
+    // V27: manual search is also a direct search over APPROVED owner listings.
+    // Previously these rows were only allowed to enrich a Google Place ID, which
+    // meant an approved owner-only workshop could never be found by its own name.
+    owners = owners.filter((item) => {
+      if (item.googlePlaceId && googlePlaceIds.has(item.googlePlaceId)) return true
+      return matchesOwnerText(item, options.locationText)
+    })
   } else {
-    // Without coordinates, owner rows are used only to enrich Google results, never appended globally.
+    // No location context: do not append the whole owner database globally.
     owners = owners.filter((item) => Boolean(item.googlePlaceId && googlePlaceIds.has(item.googlePlaceId)))
   }
 
   const merged = mergeWorkshops(google, owners)
-  if (typeof options.latitude === "number" && typeof options.longitude === "number") {
+  if (hasCoordinates) {
     merged.sort((a, b) => (a.distanceMeters ?? Number.MAX_VALUE) - (b.distanceMeters ?? Number.MAX_VALUE))
+  } else if (hasManualText) {
+    const needle = normalizeSearchText(options.locationText)
+    merged.sort((a, b) => {
+      const aName = normalizeSearchText(a.name)
+      const bName = normalizeSearchText(b.name)
+      const aExact = aName === needle ? 0 : aName.includes(needle) ? 1 : a.source === "owner" ? 2 : 3
+      const bExact = bName === needle ? 0 : bName.includes(needle) ? 1 : b.source === "owner" ? 2 : 3
+      return aExact - bExact
+    })
   }
   return merged
 }

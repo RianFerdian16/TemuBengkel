@@ -59,6 +59,8 @@ export function mapOwnerWorkshopForApi(row: any) {
     description: row.description,
     mechanic_call_available: Boolean(row.mechanicCallAvailable),
     status: statusToApi(row.status),
+    rejection_reason: row.rejectionReason || null,
+    reviewed_at: row.reviewedAt instanceof Date ? row.reviewedAt.toISOString() : row.reviewedAt || null,
     created_at: row.createdAt instanceof Date ? row.createdAt.toISOString() : row.createdAt,
     updated_at: row.updatedAt instanceof Date ? row.updatedAt.toISOString() : row.updatedAt,
   }
@@ -81,7 +83,7 @@ function toPrismaData(data: WorkshopWriteInput) {
 }
 
 export async function getPublicOwnerWorkshops() {
-  const prisma = getPrisma()
+  const prisma = getPrisma() as any
   const rows = await prisma.workshop.findMany({
     where: { status: "APPROVED" },
     orderBy: { createdAt: "desc" },
@@ -91,7 +93,7 @@ export async function getPublicOwnerWorkshops() {
 }
 
 export async function getPublicOwnerWorkshopByPlaceId(placeId: string) {
-  const prisma = getPrisma()
+  const prisma = getPrisma() as any
   const row = await prisma.workshop.findFirst({
     where: { googlePlaceId: placeId, status: "APPROVED" },
   })
@@ -99,7 +101,7 @@ export async function getPublicOwnerWorkshopByPlaceId(placeId: string) {
 }
 
 export async function getPublicOwnerWorkshopById(id: string) {
-  const prisma = getPrisma()
+  const prisma = getPrisma() as any
   const row = await prisma.workshop.findFirst({
     where: { id, status: "APPROVED" },
   })
@@ -107,7 +109,7 @@ export async function getPublicOwnerWorkshopById(id: string) {
 }
 
 export async function getOwnerWorkshops(ownerId: string) {
-  const prisma = getPrisma()
+  const prisma = getPrisma() as any
   const rows = await prisma.workshop.findMany({
     where: { ownerId },
     orderBy: { createdAt: "desc" },
@@ -116,25 +118,28 @@ export async function getOwnerWorkshops(ownerId: string) {
 }
 
 export async function getOwnerWorkshopById(ownerId: string, id: string) {
-  const prisma = getPrisma()
+  const prisma = getPrisma() as any
   const row = await prisma.workshop.findFirst({ where: { id, ownerId } })
   return row ? mapOwnerWorkshopForApi(row) : null
 }
 
 export async function createOwnerWorkshop(ownerId: string, data: WorkshopWriteInput) {
-  const prisma = getPrisma()
+  const prisma = getPrisma() as any
   const row = await prisma.workshop.create({
     data: {
       ...toPrismaData(data),
       ownerId,
       status: "PENDING",
+      rejectionReason: null,
+      reviewedAt: null,
+      reviewedById: null,
     },
   })
   return mapOwnerWorkshopForApi(row)
 }
 
 export async function updateOwnerWorkshop(ownerId: string, id: string, data: WorkshopWriteInput) {
-  const prisma = getPrisma()
+  const prisma = getPrisma() as any
   const existing = await prisma.workshop.findFirst({ where: { id, ownerId }, select: { id: true } })
   if (!existing) return null
 
@@ -144,13 +149,16 @@ export async function updateOwnerWorkshop(ownerId: string, id: string, data: Wor
       ...toPrismaData(data),
       // Any owner edit is re-moderated before it returns to the public result set.
       status: "PENDING",
+      rejectionReason: null,
+      reviewedAt: null,
+      reviewedById: null,
     },
   })
   return mapOwnerWorkshopForApi(row)
 }
 
 export async function deleteOwnerWorkshop(ownerId: string, id: string) {
-  const prisma = getPrisma()
+  const prisma = getPrisma() as any
   const result = await prisma.workshop.deleteMany({ where: { id, ownerId } })
   return result.count > 0
 }
